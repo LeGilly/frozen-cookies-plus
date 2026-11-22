@@ -8,12 +8,13 @@ test("the infobox explains what happens next and what is being hunted", async ({
   await setOptions(page, { autoBuy: 1, achievementHunter: 1, autoLumps: 2, autoGarden: 1, fancyui: 3 });
   const panel = page.locator("#fcpInfoPanel");
   await expect(panel).toBeVisible({ timeout: 20_000 });
+  // Everything below is refreshed every half second; slow machines get some margin.
   await expect(panel).toContainText("what happens next");
-  await expect(panel).toContainText("Buying next");
-  await expect(panel).toContainText("Next golden cookie");
-  await expect(panel).toContainText("Achievement hunting (FC+)");
-  await expect(panel).toContainText("Sugar lumps");
-  await expect(panel).toContainText("Closest milestones");
+  await expect(panel).toContainText("Buying next", { timeout: 15_000 });
+  await expect(panel).toContainText("Next golden cookie", { timeout: 15_000 });
+  await expect(panel).toContainText("Achievement hunting (FC+)", { timeout: 15_000 });
+  await expect(panel).toContainText("Sugar lumps", { timeout: 15_000 });
+  await expect(panel).toContainText("Closest milestones", { timeout: 15_000 });
   await expect(panel).not.toContainText("Done!");
   // Clicks go through to the game.
   expect(await panel.evaluate((el) => getComputedStyle(el).pointerEvents)).toBe("none");

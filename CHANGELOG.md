@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.1 · 2026-11-22
+- The Plus lines of the infobox (sugar lumps, garden, stocks) show up immediately instead of after a few seconds
+
 ## 1.1.0 · 2026-11-22
 - Readable infobox: a dark panel above the progress wheel says in plain words what is bought next, what it works toward, the golden cookie bank and the next golden cookie
 - The infobox also lists what is being hunted: sugar lump target, garden breeding, stocks, achievements waiting on an event and the closest milestones

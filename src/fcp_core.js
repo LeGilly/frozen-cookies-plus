@@ -154,7 +154,10 @@ FCP.restart = function () {
         delete FCP.bots[k];
     });
     FCP.tasks.forEach(function (t) {
-        if (t.test()) FCP.bots[t.name] = setInterval(t.fn, t.every);
+        if (!t.test()) return;
+        FCP.bots[t.name] = setInterval(t.fn, t.every);
+        // Run once right away so statuses show without waiting a full interval.
+        setTimeout(t.fn, 0);
     });
 };
 
