@@ -56,5 +56,9 @@ test("the FC menu shows the achievement tracker and the Plus options, and they a
   await page.locator("#fcpAchievements a", { hasText: "Show missing achievements" }).click();
   await expect(page.locator("#fcpAchievements")).toContainText("FC+ Auto-garden");
   expect(await page.evaluate(() => JSON.parse(Game.mods["frozen_cookies_plus"].save()).autoGarden)).toBe(1);
+  // "Recommended" is the first option, before the long list.
+  expect(await page.evaluate(() => Object.keys(FrozenCookies.preferenceValues)[0])).toBe("recommendedSettings");
+  const menu = await page.locator("#menu").innerText();
+  expect(menu.indexOf("Recommended OFF")).toBeLessThan(menu.indexOf("Autoclick OFF"));
   noErrors(errors);
 });

@@ -177,6 +177,24 @@ fcClickCookie = function () {
     return _fcpOriginalClickCookie.apply(this, arguments);
 };
 
+// FC's purchase scoring counts the autoclicker's production (clicks/s x
+// cookies per click). While clicks are held back that production is zero,
+// otherwise click upgrades look far better than they are.
+var _fcpOriginalBaseClickingCps = baseClickingCps;
+baseClickingCps = function () {
+    if (FCP.noClickActive()) return 0;
+    return _fcpOriginalBaseClickingCps.apply(this, arguments);
+};
+
+// Recalculate FC's recommendations whenever clicking stops or resumes.
+FCP.watchNoClick = function () {
+    var now = FCP.noClickActive();
+    if (now !== FCP.lastNoClick) {
+        FCP.lastNoClick = now;
+        FrozenCookies.recalculateCaches = true;
+    }
+};
+
 FCP.patchReincarnate = function () {
     if (Game.Reincarnate.__fcp) return;
     var original = Game.Reincarnate;
@@ -194,6 +212,7 @@ FCP.patchReincarnate = function () {
 
 FCP.challengeTick = function () {
     FCP.patchReincarnate();
+    FCP.watchNoClick();
     if (!FrozenCookies.challengeRuns) return;
 
     // Finishing the exit ascension we started.

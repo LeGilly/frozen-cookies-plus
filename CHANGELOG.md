@@ -2,6 +2,8 @@
 
 ## 1.2.0 · 2026-11-22
 - Smart bulk buy (new option, on in Recommended): with the store on x10/x100, FC buys only as many buildings as fit above its golden cookie bank and are still the best value, instead of as many as it can afford
+- During a Neverclick run FC no longer counts the paused autoclicker when choosing purchases (it was buying click upgrades instead of buildings)
+- "Recommended" is now the first option in the Frozen Cookies menu
 
 ## 1.1.3 · 2026-11-22
 - Infobox: once the earliest golden cookie time has passed, the line says it could appear any moment instead of "between and …"

@@ -89,6 +89,14 @@ FCP.preferenceValues = {
             out[k] = FCP.preferenceValues[k];
         });
     }
+    // "Recommended" (one press sets everything) goes first instead of last.
+    if (out.recommendedSettings) {
+        var first = { recommendedSettings: out.recommendedSettings };
+        Object.keys(out).forEach(function (k) {
+            if (k !== "recommendedSettings") first[k] = out[k];
+        });
+        out = first;
+    }
     FrozenCookies.preferenceValues = out;
 })();
 

@@ -82,3 +82,19 @@ test("on a save that never ascended, the current run goes for Neverclick and say
   expect(await page.evaluate(() => Game.ascensionMode)).toBe(0); // no Born Again needed
   noErrors(errors);
 });
+
+test("with clicks held back for Neverclick, FC values purchases without the autoclicker", async ({ page }) => {
+  const errors = await loadGame(page);
+  // Fresh save, one cursor, a few cookies: the situation where FC used to chase click upgrades.
+  await page.evaluate(() => { Game.cookies = 15; Game.Objects.Cursor.buy(1); Game.cookies = 20; });
+  await page.waitForFunction(() => Game.Upgrades["Reinforced index finger"].unlocked, null, { timeout: 15_000 });
+  const pick = (options) => page.evaluate((o) => {
+    Object.assign(FrozenCookies, o);
+    return nextPurchase(true).purchase.name;
+  }, options);
+  // Clicking at 250/s: doubling click power is the best buy.
+  expect(await pick({ challengeRuns: 0, autoClick: 1, cookieClickSpeed: 250 })).toBe("Reinforced index finger");
+  // Clicks held back: another cursor is far better value.
+  expect(await pick({ challengeRuns: 1, autoClick: 1, cookieClickSpeed: 250 })).toBe("Cursor");
+  noErrors(errors);
+});
