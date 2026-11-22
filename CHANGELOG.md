@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.3 · 2026-11-22
+- Infobox: once the earliest golden cookie time has passed, the line says it could appear any moment instead of "between and …"
+
 ## 1.1.2 · 2026-11-22
 - Challenge runs: on a save that never ascended, the infobox now says the current run is going for Neverclick without clicking, instead of talking about the next reincarnation
 

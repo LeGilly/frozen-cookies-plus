@@ -131,7 +131,20 @@ FCP.infoLines = function (t_d) {
     var gMin = byPrefix("GC Minimum"),
         gEst = byPrefix("GC Estimate"),
         gMax = byPrefix("GC Maximum");
-    if (gEst) line("#ffde5f", "Next golden cookie", "likely in " + gEst.display + (gMin && gMax ? " (between " + gMin.display + " and " + gMax.display + ")" : ""));
+    // A bound that has already passed is shown by FC as "" (or "Done!").
+    var left = function (o) {
+        return o && o.display && !/done/i.test(o.display) ? o.display : "";
+    };
+    if (gEst || gMax) {
+        var est = left(gEst),
+            min = left(gMin),
+            max = left(gMax);
+        var text;
+        if (est && min) text = "likely in " + est + (max ? " (between " + min + " and " + max + ")" : "");
+        else if (est) text = "likely in " + est + " (could appear any moment" + (max ? ", at the latest in " + max : "") + ")";
+        else text = "any moment now" + (max ? " (at the latest in " + max + ")" : "");
+        line("#ffde5f", "Next golden cookie", text);
+    }
 
     var buffs = t_d.filter(function (o) { return o.name && / Time$/.test(o.name); });
     buffs.forEach(function (o) {
