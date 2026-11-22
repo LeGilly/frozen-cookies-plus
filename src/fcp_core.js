@@ -64,6 +64,16 @@ FCP.preferenceValues = {
         display: ["Auto-stocks OFF", "Auto-stocks ON"],
         default: 0,
     },
+    measuredClicks: {
+        hint: "Use the measured click speed (real clicks per second, often far below the setting) for time estimates and for how FC values click upgrades.",
+        display: ["Measured click speed OFF", "Measured click speed ON"],
+        default: 1,
+    },
+    insights: {
+        hint: "Cookie Monster-style insight: colour every building and upgrade by how good a buy it is, show income gain and share on building rows, details in tooltips, and where your cookies come from in this menu.",
+        display: ["Store insight OFF", "Store insight ON"],
+        default: 1,
+    },
     firstRunScoring: {
         hint: "First-run scoring: before your first ascension, rate purchases by Cookie Monster's payback period (only the cookies still missing count). Measured +52% cookies at 30 min, +16% at 1 h on a new save; not used after an ascension, where it didn't help.",
         display: ["First-run scoring OFF", "First-run scoring ON"],
@@ -204,6 +214,8 @@ recommendedSettingsAction = function () {
         FrozenCookies.autoStocks = 1;
         FrozenCookies.smartBulk = 1;
         FrozenCookies.firstRunScoring = 1;
+        FrozenCookies.measuredClicks = 1;
+        FrozenCookies.insights = 1;
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;
@@ -299,6 +311,12 @@ FCP.appendMenu = function () {
     var first = menu.children(".subsection").first();
     if (first.length) first.after(section);
     else menu.append(section);
+    if (FrozenCookies.insights && FCP.breakdownHtml) {
+        var income = $("<div>").addClass("subsection").attr("id", "fcpIncome");
+        income.append($("<div>").addClass("title").text("Where your cookies come from (FC+)"));
+        income.append($("<div>").addClass("listing").html(FCP.breakdownHtml()));
+        section.after(income);
+    }
 };
 
 FCP.status = {}; // module name -> short status text shown in the menu

@@ -32,6 +32,8 @@ Everything is bundled in one `main.js` (libraries included), so the mod works of
 | Auto-stocks | Buys goods below 70% of their resting value (unless crashing) and sells above 125% at a profit. It only spends cookies FC isn't holding in its golden-cookie bank. |
 | Smart bulk buy | With the store on x10/x100, buys only as many of a building as fit above the golden cookie bank and are still better value than any other purchase. Early in a run that is still 100 at a time; later it stops emptying the bank. |
 | First-run scoring | Before your first ascension, rates purchases by Cookie Monster's payback period (only the cookies you are still missing count towards the wait), which gets a new save going faster. After an ascension FC's usual rating is kept. |
+| Measured click speed | Measures the real clicks per second (often far below the setting) and uses it for time estimates and for how FC values click upgrades. |
+| Store insight | Cookie Monster-style: every building and store upgrade is coloured by how good a buy it is (green = best buy now, then yellow, orange, red, purple); building rows show the income gain of one more and their share of production; tooltips add rating, income gain, payback time and when it is affordable; the FC menu shows where your cookies come from. |
 
 The infobox (bottom left, *Infobox* option under Display) is redrawn as a readable panel above FC's progress wheel. It spells out what FC buys next, what it is working toward, the golden cookie bank, when the next golden cookie is due and the active buffs. Below that it shows what each Plus module is hunting: sugar lump target, garden breeding, stocks, the achievements still waiting on an event, and the two closest milestone achievements.
 

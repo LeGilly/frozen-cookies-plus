@@ -70,15 +70,6 @@ FCP.closestMilestones = function (n) {
     return list.slice(0, n || 2);
 };
 
-// Cookies per second actually being made: buildings, plus the autoclicker
-// only when it is really clicking.
-FCP.cookieRate = function () {
-    var rate = Game.cookiesPs;
-    var clicking = FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed && !(FCP.noClickActive && FCP.noClickActive());
-    if (clicking) rate += Game.computedMouseCps * FrozenCookies.cookieClickSpeed;
-    return rate;
-};
-
 // What the Achievement Hunter is still waiting on.
 FCP.hunterWaiting = function () {
     var w = [];
@@ -153,6 +144,16 @@ FCP.infoLines = function (t_d) {
             Math.floor(pct * 100) + "% of " + Beautify(bankTotal) +
                 (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full") + " (so Lucky! pays the most)"
         );
+    }
+
+    if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {
+        var clickText;
+        if (FCP.noClickActive && FCP.noClickActive()) clickText = "paused for the Neverclick challenge";
+        else if (FCP.clicks && FCP.clicks.measured !== null)
+            clickText = Math.round(FCP.clicks.measured) + "/s measured (set to " + FrozenCookies.cookieClickSpeed + "/s)" +
+                (FrozenCookies.measuredClicks ? "" : " · estimates use the setting");
+        else clickText = "measuring… (set to " + FrozenCookies.cookieClickSpeed + "/s)";
+        line("#80cbc4", "Clicking", clickText);
     }
 
     var gMin = byPrefix("GC Minimum"),

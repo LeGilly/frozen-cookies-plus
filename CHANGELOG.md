@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 · 2026-11-22
+- Measured click speed (on by default): the real clicks per second are measured and used for time estimates and for how FC values click upgrades; the infobox shows "measured (set to …)"
+- Store insight, Cookie Monster style (on by default): every building and store upgrade is coloured by how good a buy it is compared with the best one now (green → yellow → orange → red → purple)
+- Building rows show the income gain of one more and the building's share of production
+- Building and upgrade tooltips show rating, income gain, payback time, price and when it is affordable, plus share and output per building
+- New "Where your cookies come from" section in the Frozen Cookies menu: income by source and by building
+
 ## 1.3.0 · 2026-11-22
 - First-run scoring (new option, on in Recommended): before the first ascension, purchases are rated by Cookie Monster's payback period; measured +52% cookies after 30 min and +16% after 1 h on a new save
 

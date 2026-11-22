@@ -18,6 +18,8 @@
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
 | `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`) |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`) |
+| `src/fcp_clicks.js` | Measured click speed (wraps `baseClickingCps`; `FCP.cookieRate` for estimates) |
+| `src/fcp_insight.js` | Store insight: ratings from FC's `recommendationList`, store badges, tooltips (wraps building `tooltip` and `Game.crateTooltip`), income breakdown |
 | `src/fcp_infobox.js` | The infobox panel: HTML overlay above FC's wheel (wraps upstream `drawCircles`) |
 | `vendor/` | jQuery 3.6.0, jQuery UI 1.12.1, underscore 1.8.3, jCanvas 20.1.1, jqPlot 1.0.9 + plugins (licenses alongside) |
 | `tools/build.mjs` | Builds `Steam/FrozenCookiesPlus/` (info.txt + one `main.js` with everything inlined) and `dist/*.zip` |
@@ -32,7 +34,7 @@
 ## Rules for the code
 
 - **Don't edit the upstream files.** Change their behaviour from `fcp_*` files by wrapping globals
-  (`FCStart`, `fcClickCookie`, `recommendedSettingsAction`, `drawCircles`, `autoCookie`, `safeBuy`, `purchaseEfficiency`, `Game.Ascend`, `Game.Reincarnate`).
+  (`FCStart`, `fcClickCookie`, `recommendedSettingsAction`, `drawCircles`, `autoCookie`, `safeBuy`, `purchaseEfficiency`, `baseClickingCps`, building `tooltip`, `Game.crateTooltip`, `Game.Ascend`, `Game.Reincarnate`).
   Wrappers must exist before `registerMod` runs, which the load order in `frozen_cookies.js` guarantees.
   Updating upstream then stays a plain file copy.
 - New options go in `FCP.preferenceValues` (fcp_core.js): they show up in the menu, save and load by
@@ -67,6 +69,8 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 - `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending and a full Born Again run.
 - `garden.spec.mjs`: forces thousands of garden ticks; all seeds must unlock, then the sacrifice.
 - `bulk.spec.mjs`: smart bulk counts (full 100 early, never below the bank, stops at worse value) and FC's autobuy at x100.
+- `clicks.spec.mjs`: the click rate measurement and where it is used.
+- `insight.spec.mjs`: store colours and badges, tooltips, the income breakdown, and switching it off.
 - `infobox.spec.mjs`: the panel's wording, that clicks pass through it, and that it hides when turned off.
 - `version.spec.mjs`: version, changelog and info.txt agree.
 
