@@ -1,0 +1,53 @@
+# Actions are pinned to exact commits (the comment shows the version) so a changed tag can't alter this job.
+# After "Tests" pass on main, builds the mod and publishes release v<version> with the zip attached,
+# unless that release already exists. So a release happens when the version in frozen_cookies.js changes.
+name: Release
+
+on:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+
+      - name: Build the mod
+        run: node tools/build.js
+
+      - name: Publish the release if this version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          VERSION=$(grep -oP 'version: "\K[^"]+' frozen_cookies.js | head -1)
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists, nothing to publish."
+            exit 0
+          fi
+          # Release notes: this version's lines from CHANGELOG.md.
+          awk -v v="$VERSION" '$0 ~ "^## "v" " {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          printf '\nInstall: unzip into Cookie Clicker\\resources\\app\\mods\\local (Steam). See README.md.\n' >> notes.md
+          gh release create "v$VERSION" "dist/FrozenCookiesPlus-$VERSION.zip" \
+            --repo "$GITHUB_REPOSITORY" --target "$SHA" \
+            --title "Frozen Cookies Plus $VERSION" --notes-file notes.md

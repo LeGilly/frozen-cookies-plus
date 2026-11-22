@@ -1,0 +1,67 @@
+// The achievements that need an event: an unripe lump, wrinklers, pledges, a loan, a Born Again run.
+import { test, expect } from "@playwright/test";
+import { loadGame, richGame, setOptions, won, noErrors } from "./game.mjs";
+
+test("it harvests a mature unripe sugar lump once for Hand-picked", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { lumps: 10 });
+  await page.evaluate(() => { Game.lumpT = Date.now() - Game.lumpMatureAge - 1000; });
+  await setOptions(page, { achievementHunter: 1 });
+  // Harvested means a new lump started growing (Hand-picked itself is a 50% roll in the game).
+  await expect.poll(() => page.evaluate(() => Date.now() - Game.lumpT < 60_000), { timeout: 15_000 }).toBe(true);
+  noErrors(errors);
+});
+
+test("it pokes a wrinkler 50 times without popping it", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  await page.evaluate(() => { Game.elderWrath = 3; for (let i = 0; i < 3; i++) Game.SpawnWrinkler(); });
+  await page.waitForFunction(() => Game.wrinklers.some((w) => w.phase == 2), null, { timeout: 60_000 });
+  await page.evaluate(() => Game.wrinklers.forEach((w) => { if (w.phase == 2) w.clicks = 45; }));
+  await setOptions(page, { achievementHunter: 1 });
+  await expect.poll(() => won(page, "Wrinkler poker"), { timeout: 30_000 }).toBeTruthy();
+  expect(await page.evaluate(() => Game.wrinklers.filter((w) => w.phase == 2).length)).toBeGreaterThan(0);
+  noErrors(errors);
+});
+
+test("Elder Covenant is bought for Elder calm and then revoked", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  await page.evaluate(() => { Game.pledges = 5; Game.Win("Elder slumber"); Game.pledgeT = 0; Game.Unlock("Elder Covenant"); });
+  await setOptions(page, { elderPledgeAchievs: 1 });
+  await expect.poll(() => won(page, "Elder calm"), { timeout: 20_000 }).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => !Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);
+  noErrors(errors);
+});
+
+test("a loan before ascending, then a Born Again run without clicks, then back to a normal run", async ({ page }) => {
+  test.setTimeout(300_000);
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100, cookies: 1e20 });
+  await page.evaluate(() => { Game.Objects.Bank.level = 1; Game.LoadMinigames(); });
+  await page.waitForFunction(() => Game.Objects.Bank.minigame && Game.Objects.Bank.minigame.goodsById);
+  await page.evaluate(() => {
+    Game.Objects.Bank.minigame.officeLevel = 2;
+    Game.Achievements["True Neverclick"].won = 0;
+    Game.Achievements["Neverclick"].won = 0;
+  });
+  await setOptions(page, { achievementHunter: 1, challengeRuns: 1, autoClick: 1, cookieClickSpeed: 20 });
+  await page.waitForTimeout(2500); // let the hunter patch Game.Ascend / Game.Reincarnate
+
+  await page.evaluate(() => Game.Ascend(1)); // the way FC ascends
+  await page.waitForFunction(() => Game.OnAscend == 1, null, { timeout: 90_000 });
+  expect(await page.evaluate(() => !!Game.hasBuff("Loan 1"))).toBe(true);
+  await page.evaluate(() => Game.Reincarnate(1));
+  await page.waitForFunction(() => !Game.OnAscend && !Game.ReincarnateTimer, null, { timeout: 90_000 });
+  expect(await won(page, "Debt evasion")).toBeTruthy();
+  expect(await page.evaluate(() => Game.ascensionMode)).toBe(1); // Born Again
+
+  await page.waitForTimeout(3000);
+  expect(await page.evaluate(() => Game.cookieClicks)).toBe(0); // autoclick is held back
+  await page.evaluate(() => Game.Earn(2e6));
+  await expect.poll(() => won(page, "True Neverclick"), { timeout: 60_000 }).toBeTruthy();
+  expect(await won(page, "Neverclick")).toBeTruthy();
+  await page.waitForFunction(() => Game.ascensionMode == 0 && !Game.OnAscend && !Game.AscendTimer && Game.cookiesEarned < 1e6,
+    null, { timeout: 120_000 });
+  noErrors(errors);
+});

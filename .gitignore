@@ -1,0 +1,9 @@
+node_modules/
+test-results/
+playwright-report/
+# Build output: made by `npm run build`, published as a GitHub Release
+Steam/
+dist/
+# The game the tests run against, downloaded by tools/get-game.mjs
+.game/
+.game-tmp/
