@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node tools/build.mjs",
+    "bench": "node tools/build.mjs && node tools/get-game.mjs && node tools/benchmark.mjs",
     "pretest": "node tools/build.mjs && node tools/get-game.mjs",
     "test": "playwright test"
   },

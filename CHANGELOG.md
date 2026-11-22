@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.0 · 2026-11-22
+- First-run scoring (new option, on in Recommended): before the first ascension, purchases are rated by Cookie Monster's payback period; measured +52% cookies after 30 min and +16% after 1 h on a new save
+
 ## 1.2.0 · 2026-11-22
 - Smart bulk buy (new option, on in Recommended): with the store on x10/x100, FC buys only as many buildings as fit above its golden cookie bank and are still the best value, instead of as many as it can afford
 - During a Neverclick run FC no longer counts the paused autoclicker when choosing purchases (it was buying click upgrades instead of buildings)

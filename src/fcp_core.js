@@ -64,6 +64,11 @@ FCP.preferenceValues = {
         display: ["Auto-stocks OFF", "Auto-stocks ON"],
         default: 0,
     },
+    firstRunScoring: {
+        hint: "First-run scoring: before your first ascension, rate purchases by Cookie Monster's payback period (only the cookies still missing count). Measured +52% cookies at 30 min, +16% at 1 h on a new save; not used after an ascension, where it didn't help.",
+        display: ["First-run scoring OFF", "First-run scoring ON"],
+        default: 0,
+    },
     smartBulk: {
         hint: "Smart bulk buy: with the store on x10/x100, buy only as many buildings as fit above the golden cookie bank and are still the best value (see fcp_bulk.js).",
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
@@ -198,6 +203,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.autoGarden = 1;
         FrozenCookies.autoStocks = 1;
         FrozenCookies.smartBulk = 1;
+        FrozenCookies.firstRunScoring = 1;
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;

@@ -17,9 +17,11 @@
 | `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again), tracker categories |
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
 | `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`) |
+| `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`) |
 | `src/fcp_infobox.js` | The infobox panel: HTML overlay above FC's wheel (wraps upstream `drawCircles`) |
 | `vendor/` | jQuery 3.6.0, jQuery UI 1.12.1, underscore 1.8.3, jCanvas 20.1.1, jqPlot 1.0.9 + plugins (licenses alongside) |
 | `tools/build.mjs` | Builds `Steam/FrozenCookiesPlus/` (info.txt + one `main.js` with everything inlined) and `dist/*.zip` |
+| `tools/benchmark.mjs`, `tools/bench-driver.js` | Benchmark of FC's buying in fast-forward (see Benchmark) |
 | `tools/get-game.mjs` | Downloads the game the tests run against into `.game/` |
 | `tests/`, `package.json`, `playwright.config.mjs`, `.github/workflows/tests.yml` | The tests |
 | `.github/workflows/release.yml` | Publishes the GitHub Release with the zip |
@@ -30,7 +32,7 @@
 ## Rules for the code
 
 - **Don't edit the upstream files.** Change their behaviour from `fcp_*` files by wrapping globals
-  (`FCStart`, `fcClickCookie`, `recommendedSettingsAction`, `drawCircles`, `autoCookie`, `safeBuy`, `Game.Ascend`, `Game.Reincarnate`).
+  (`FCStart`, `fcClickCookie`, `recommendedSettingsAction`, `drawCircles`, `autoCookie`, `safeBuy`, `purchaseEfficiency`, `Game.Ascend`, `Game.Reincarnate`).
   Wrappers must exist before `registerMod` runs, which the load order in `frozen_cookies.js` guarantees.
   Updating upstream then stays a plain file copy.
 - New options go in `FCP.preferenceValues` (fcp_core.js): they show up in the menu, save and load by
@@ -69,6 +71,32 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 - `version.spec.mjs`: version, changelog and info.txt agree.
 
 The tests can't run the Steam app itself; after a release, check once in the game.
+
+## Benchmark (changing how FC chooses purchases)
+
+Any change to how purchases are chosen is measured before it ships: `npm run bench` (or
+`node tools/benchmark.mjs --variants=base,cm --seeds=3 --scenarios=fresh,ascended --hours=1`).
+
+- It fast-forwards the real game in a headless browser: the game loop and timers are stopped, the
+  clock and randomness are replaced, then `Game.Logic()` and FC's `autoCookie()` run frame by frame at
+  5 fps, with no clicking. It reports cookies baked at checkpoints and the gain of each variant vs the first.
+- Runs are reproducible: same seed, same result. Golden cookies, reindeer and the grandmapocalypse draw
+  from their own random streams, so every variant meets the same golden cookies.
+- Variants live in `tools/bench-driver.js` (`variants`). Scenarios: `fresh` (new save, 4 h) and
+  `ascended` (10,000 prestige levels and the heavenly upgrades up to 1e6 chips, 1–2 h).
+- Speed: about 100 s per 4 game-hours on a fresh save; the first minutes after an ascension are slow
+  (FC recalculates after every one of hundreds of purchases, ~190 ms each).
+- The `ascended` scenario is chaotic: changing one purchase can send a run on a different path (±50%),
+  so use 8+ seeds there and look at medians. The `fresh` scenario is stable with 3 seeds.
+
+Results so far (2026-11-22):
+
+| Variant | fresh 30 min / 1 h / 2 h / 4 h | ascended 30 min (8 seeds) | Shipped |
+|---|---|---|---|
+| `cm`: Cookie Monster's payback period | +52% / +16% / +5% / +1.2% | −9% (noise) | Before the first ascension only (`fcp_scoring.js`) |
+| `recalc`: FC's formula, recalculated every 5 s | 0% everywhere | 0% | No (no effect) |
+| `achiev`: count achievements a purchase earns | 0 / 0 / −0.7% / −1.4% | noise | No |
+| `bundle`: achiev + "buy to the next building achievement" | 0 / 0 / −0.5% / −0.5% | not run | No |
 
 ## Updating
 
