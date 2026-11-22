@@ -64,6 +64,11 @@ FCP.preferenceValues = {
         display: ["Auto-stocks OFF", "Auto-stocks ON"],
         default: 0,
     },
+    smartBulk: {
+        hint: "Smart bulk buy: with the store on x10/x100, buy only as many buildings as fit above the golden cookie bank and are still the best value (see fcp_bulk.js).",
+        display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
+        default: 0,
+    },
 };
 
 (function insertPreferences() {
@@ -184,6 +189,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.autoLumps = 2;
         FrozenCookies.autoGarden = 1;
         FrozenCookies.autoStocks = 1;
+        FrozenCookies.smartBulk = 1;
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;
