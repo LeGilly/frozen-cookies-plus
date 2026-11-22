@@ -217,18 +217,26 @@ FCP.challengeTick = function () {
         FrozenCookies.recalculateCaches = true;
     }
 
+    // What is being held back right now (this run).
+    var rules = [];
+    if (FCP.noClickActive()) rules.push("no big cookie clicks until 1 million baked (golden cookies still clicked)");
+    if (FCP.hardcoreActive()) rules.push("no upgrades until 1 billion baked");
+    var goals = FCP.challengeGoals().join(" + ").replace("neverclick", "Neverclick").replace("hardcore", "Hardcore");
+
     if (Game.ascensionMode != 1) {
-        FCP.status["Challenge runs"] = FCP.challengeGoals().length
-            ? "next reincarnation will be Born Again (" + FCP.challengeGoals().join(", ") + ")"
-            : "all done";
+        if (rules.length) {
+            // Before the first ascension these achievements count without Born Again.
+            FCP.status["Challenge runs"] = "this run (no ascension yet) goes for " + goals + ": " + rules.join(", ");
+        } else {
+            FCP.status["Challenge runs"] = goals ? "next reincarnation will be Born Again, for " + goals : "all done";
+        }
         return;
     }
 
     var waiting = FCP.noClickActive() || FCP.hardcoreActive();
     FCP.status["Challenge runs"] = waiting
-        ? "Born Again run: " + (FCP.noClickActive() ? "no clicking until 1M baked" : "") +
-          (FCP.hardcoreActive() ? (FCP.noClickActive() ? ", " : "") + "no upgrades until 1B baked" : "")
-        : "Born Again run done, ascending";
+        ? "Born Again run for " + goals + ": " + rules.join(", ")
+        : "Born Again run done, ascending back to a normal run";
     if (!waiting && Game.cookiesEarned >= 1000000) {
         FCP.challengeExit = true;
         FCP.log("Challenge run finished, ascending back to a normal run.", true);

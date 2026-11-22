@@ -65,3 +65,20 @@ test("a loan before ascending, then a Born Again run without clicks, then back t
     null, { timeout: 120_000 });
   noErrors(errors);
 });
+
+test("on a save that never ascended, the current run goes for Neverclick and says so", async ({ page }) => {
+  const errors = await loadGame(page);
+  // Brand new save: nothing baked, never ascended.
+  expect(await page.evaluate(() => [Game.resets, Game.cookiesEarned])).toEqual([0, 0]);
+  await setOptions(page, { challengeRuns: 1, autoClick: 1, cookieClickSpeed: 20 });
+  await expect.poll(() => page.evaluate(() => FCP.status["Challenge runs"] || ""), { timeout: 10_000 })
+    .toContain("no ascension yet");
+  await page.waitForTimeout(2000);
+  expect(await page.evaluate(() => Game.cookieClicks)).toBe(0);
+  // Past 1 million baked the game awards both achievements and clicking comes back.
+  await page.evaluate(() => Game.Earn(2e6));
+  await expect.poll(() => won(page, "True Neverclick"), { timeout: 30_000 }).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => Game.cookieClicks), { timeout: 10_000 }).toBeGreaterThan(0);
+  expect(await page.evaluate(() => Game.ascensionMode)).toBe(0); // no Born Again needed
+  noErrors(errors);
+});

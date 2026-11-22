@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.1.2 · 2026-11-22
+- Challenge runs: on a save that never ascended, the infobox now says the current run is going for Neverclick without clicking, instead of talking about the next reincarnation
+
 ## 1.1.1 · 2026-11-22
 - The Plus lines of the infobox (sugar lumps, garden, stocks) show up immediately instead of after a few seconds
 
