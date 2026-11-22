@@ -70,6 +70,15 @@ FCP.closestMilestones = function (n) {
     return list.slice(0, n || 2);
 };
 
+// Cookies per second actually being made: buildings, plus the autoclicker
+// only when it is really clicking.
+FCP.cookieRate = function () {
+    var rate = Game.cookiesPs;
+    var clicking = FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed && !(FCP.noClickActive && FCP.noClickActive());
+    if (clicking) rate += Game.computedMouseCps * FrozenCookies.cookieClickSpeed;
+    return rate;
+};
+
 // What the Achievement Hunter is still waiting on.
 FCP.hunterWaiting = function () {
     var w = [];
@@ -98,33 +107,51 @@ FCP.infoLines = function (t_d) {
 
     head("Frozen Cookies — what happens next");
 
-    var when = function (d) {
-        return !d || /done/i.test(d) ? "now" : "in " + d;
+    // Times are computed here rather than taken from FC's infobox: FC assumes
+    // the autoclicker is running, which is wrong during a Neverclick run.
+    var bankTotal = 0;
+    try { bankTotal = delayAmount() || 0; } catch (e) {}
+    var rate = FCP.cookieRate();
+    var eta = function (need) {
+        if (need <= 0) return "affordable now";
+        if (!(rate > 0)) return "waiting for a golden cookie";
+        var sec = need / rate;
+        return "in " + (sec < 1 ? "under 1s" : timeDisplay(sec));
     };
 
-    var next = byPrefix("Next: ");
-    if (next) {
-        var np = nextPurchase();
-        var unlock = FCP.purchaseAchievement(np && np.purchase, 1);
+    var np = null;
+    try { np = nextPurchase(); } catch (e) {}
+    if (np && np.purchase) {
+        var cost = np.cost || 0;
+        var unlock = FCP.purchaseAchievement(np.purchase, 1);
+        var name = byPrefix("Next: ") ? byPrefix("Next: ").name.slice(6) : decodeHtml(np.purchase.name);
         line(
             "#e0e0e0",
             "Buying next",
-            next.name.slice(6) + " " + when(next.display) + (unlock ? " → unlocks “" + unlock.dname + "”" : "")
+            name + " for " + Beautify(cost) + " · " + eta(cost + bankTotal - Game.cookies) +
+                (unlock ? " → unlocks “" + unlock.dname + "”" : "")
         );
     }
-    var chain = byPrefix("Chain to: ");
-    if (chain)
-        line("#9e9e9e", "Then working toward", chain.name.slice(10) + " (buying its requirements first) · " + when(chain.display));
 
-    var bank = byPrefix("Bank Completion");
-    var bankTotal = 0;
-    try { bankTotal = delayAmount(); } catch (e) {}
+    var chain = byPrefix("Chain to: ");
+    if (chain) {
+        var need = 0;
+        try {
+            var cp = nextChainedPurchase().purchase;
+            var chainTotal = upgradePrereqCost(cp, true) - cp.getPrice();
+            var chainFinished = chainTotal - (upgradePrereqCost(cp) - cp.getPrice());
+            need = chainTotal + bankTotal - Game.cookies - chainFinished;
+        } catch (e) {}
+        line("#9e9e9e", "Then working toward", chain.name.slice(10) + " (buying its requirements first) · " + eta(need));
+    }
+
     if (bankTotal > 0) {
         var pct = Math.min(1, Game.cookies / bankTotal);
         line(
             "#fcd400",
             "Golden cookie bank",
-            Math.floor(pct * 100) + "% of " + Beautify(bankTotal) + (bank ? " · full " + when(bank.display) : " · full") + " (so Lucky! pays the most)"
+            Math.floor(pct * 100) + "% of " + Beautify(bankTotal) +
+                (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full") + " (so Lucky! pays the most)"
         );
     }
 

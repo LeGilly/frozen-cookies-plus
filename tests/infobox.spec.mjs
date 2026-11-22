@@ -39,3 +39,17 @@ test("the golden cookie line stays readable once the earliest time has passed", 
   expect(await text(["", "", "12s"])).toBe("any moment now (at the latest in 12s)");
   noErrors(errors);
 });
+
+test("during a Neverclick start, times use the real cookie rate instead of the paused autoclicker", async ({ page }) => {
+  const errors = await loadGame(page);
+  // A fresh save with one cursor (0.1 cookies/s) and 20 cookies, autoclick on at 250 clicks/s but paused.
+  await page.evaluate(() => { Game.cookies = 15; Game.Objects.Cursor.buy(1); Game.cookies = 20; Game.cookiesEarned = 20; });
+  await setOptions(page, { challengeRuns: 1, autoClick: 1, cookieClickSpeed: 250, fancyui: 1 });
+  const panel = page.locator("#fcpInfoPanel");
+  await expect(panel).toContainText("Buying next", { timeout: 15_000 });
+  await expect(panel).toContainText("no big cookie clicks", { timeout: 15_000 });
+  const next = await page.evaluate(() => FCP.infoLines([]).find((l) => l.label === "Buying next").value);
+  expect(next).toMatch(/ for [\d,.]+ · in (\d+m|\d+h)/); // minutes away, not "now"
+  expect(next).not.toContain("now");
+  noErrors(errors);
+});
