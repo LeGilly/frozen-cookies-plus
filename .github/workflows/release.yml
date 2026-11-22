@@ -33,7 +33,7 @@ jobs:
           node-version: 24
 
       - name: Build the mod
-        run: node tools/build.js
+        run: node tools/build.mjs
 
       - name: Publish the release if this version is new
         env:

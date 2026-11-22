@@ -18,7 +18,7 @@
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
 | `src/fcp_infobox.js` | The infobox panel: HTML overlay above FC's wheel (wraps upstream `drawCircles`) |
 | `vendor/` | jQuery 3.6.0, jQuery UI 1.12.1, underscore 1.8.3, jCanvas 20.1.1, jqPlot 1.0.9 + plugins (licenses alongside) |
-| `tools/build.js` | Builds `Steam/FrozenCookiesPlus/` (info.txt + one `main.js` with everything inlined) and `dist/*.zip` |
+| `tools/build.mjs` | Builds `Steam/FrozenCookiesPlus/` (info.txt + one `main.js` with everything inlined) and `dist/*.zip` |
 | `tools/get-game.mjs` | Downloads the game the tests run against into `.game/` |
 | `tests/`, `package.json`, `playwright.config.mjs`, `.github/workflows/tests.yml` | The tests |
 | `.github/workflows/release.yml` | Publishes the GitHub Release with the zip |

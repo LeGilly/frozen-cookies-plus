@@ -4,8 +4,8 @@
   "description": "Build script and tests for Frozen Cookies Plus (not used by the mod itself).",
   "type": "module",
   "scripts": {
-    "build": "node tools/build.js",
-    "pretest": "node tools/build.js && node tools/get-game.mjs",
+    "build": "node tools/build.mjs",
+    "pretest": "node tools/build.mjs && node tools/get-game.mjs",
     "test": "playwright test"
   },
   "devDependencies": {

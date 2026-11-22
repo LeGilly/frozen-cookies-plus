@@ -1,6 +1,6 @@
 // Frozen Cookies Plus — loader.
 // Works two ways:
-//  * Steam / bundled: tools/build.js puts every library and script into one
+//  * Steam / bundled: tools/build.mjs puts every library and script into one
 //    main.js together with window.FCP_BUNDLE, so nothing is downloaded.
 //  * Web: Game.LoadMod("<baseUrl>/frozen_cookies.js") fetches the files
 //    from the same folder as this script.
@@ -28,7 +28,7 @@ var baseUrl =
 var FrozenCookies = {
     baseUrl: baseUrl,
     branch: "plus",
-    version: "1.1.0", // keep in sync with Steam info.txt (tools/build.js reads it from here)
+    version: "1.1.0", // keep in sync with Steam info.txt (tools/build.mjs reads it from here)
     upstreamVersion: "erb-2.052.8",
     modId: "frozen_cookies_plus",
 };
