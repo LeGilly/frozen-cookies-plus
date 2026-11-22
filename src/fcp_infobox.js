@@ -153,6 +153,7 @@ FCP.infoLines = function (t_d) {
             clickText = Math.round(FCP.clicks.measured) + "/s measured (set to " + FrozenCookies.cookieClickSpeed + "/s)" +
                 (FrozenCookies.measuredClicks ? "" : " · estimates use the setting");
         else clickText = "measuring… (set to " + FrozenCookies.cookieClickSpeed + "/s)";
+        if (FrozenCookies.cookieClickSpeed > 50) clickText += " · the game allows 50/s at most";
         line("#80cbc4", "Clicking", clickText);
     }
 
@@ -185,6 +186,7 @@ FCP.infoLines = function (t_d) {
         plus.push(["#ff8a65", "Challenge run", FCP.status["Challenge runs"]]);
     if (FrozenCookies.autoLumps && FCP.status["Sugar lumps"]) plus.push(["#c39bff", "Sugar lumps", FCP.status["Sugar lumps"]]);
     if (FrozenCookies.autoGarden && FCP.status["Garden"]) plus.push(["#7ed957", "Garden", FCP.status["Garden"]]);
+    if (FCP.status["Endless cycle"]) plus.push(["#90a4ae", "Endless cycle", FCP.status["Endless cycle"]]);
     if (FrozenCookies.autoStocks && FCP.status["Stock market"]) plus.push(["#4fc3f7", "Stock market", FCP.status["Stock market"]]);
     var waiting = FCP.hunterWaiting();
     if (waiting.length) plus.push(["#f48fb1", "Waiting for", waiting.join(" · ")]);

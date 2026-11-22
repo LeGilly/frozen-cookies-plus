@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 · 2026-11-22
+- UI tricks (on in Recommended) now also earn Cookie-dunker and, at Christmas, Baby it's old outside
+- Shadow achievements (new option, on in Recommended): God complex, In her likeness, Last Chance to See, and When the cookies ascend just right (the bank is set to exactly 1 trillion before FC ascends)
+- Challenge runs add Speed baking I–III: after Neverclick, a Born Again run clicks flat out for 1 million cookies within 15 minutes (reached in about 10 minutes in simulation)
+- Achievement Hunter: No time like the present (sends itself a gift, redeems it after the game's 1-hour cooldown; needs Wrapping paper)
+- Ascension marathon (new option, off): Endless cycle, ascending each time a run is worth one more prestige level (the game doesn't count ascensions without one)
+- Cheat achievements (new option, off): Cheated cookies taste awful and Four-leaf cookie, faked for one achievement check and put back
+- Clicking is counted at the game's real maximum of 50 clicks per second, whatever the autoclicker is set to
+- Challenge runs only ever end Born Again runs FC+ started itself
+- The achievement tracker files every one of these under the option that earns it, and only luck/time ones stay manual
+
 ## 1.4.0 · 2026-11-22
 - Measured click speed (on by default): the real clicks per second are measured and used for time estimates and for how FC values click upgrades; the infobox shows "measured (set to …)"
 - Store insight, Cookie Monster style (on by default): every building and store upgrade is coloured by how good a buy it is compared with the best one now (green → yellow → orange → red → purple)

@@ -99,6 +99,18 @@ FCP.patchAscend = function () {
                 FCP.log("Took a loan before ascending for 'Debt evasion'.");
             }
         } catch (e) {}
+        try {
+            if (
+                bypass &&
+                FrozenCookies.shadowAchievements &&
+                !FCP.marathonAscending &&
+                !FCP.has("When the cookies ascend just right") &&
+                Game.cookies >= 1e12 &&
+                FCP.landBank
+            ) {
+                if (FCP.landBank(1e12)) FCP.log("Bank set to exactly 1 trillion before ascending: 'When the cookies ascend just right'.");
+            }
+        } catch (e) {}
         return original.apply(this, arguments);
     };
     patched.__fcp = true;
@@ -140,35 +152,81 @@ FCP.elderTick = function () {
 // run without clicking the big cookie (and without upgrades for Hardcore),
 // then ascend straight back to a normal run.
 // ---------------------------------------------------------------------------
+FCP.speedNames = ["Speed baking I", "Speed baking II", "Speed baking III"];
+
 FCP.challengeGoals = function () {
     var goals = [];
     if (!FCP.has("True Neverclick") || !FCP.has("Neverclick")) goals.push("neverclick");
+    if (!FCP.speedNames.every(FCP.has)) goals.push("speed");
     if (FrozenCookies.challengeRuns == 2 && !FCP.has("Hardcore")) goals.push("hardcore");
     return goals;
 };
+FCP.goalLabel = function (g) {
+    return { neverclick: "Neverclick", speed: "Speed baking", hardcore: "Hardcore" }[g] || g;
+};
 
+// These achievements only count in a Born Again run, or before the first ascension.
 FCP.inChallengeRun = function () {
     return !!FrozenCookies.challengeRuns && (Game.ascensionMode == 1 || Game.resets == 0);
 };
 
+FCP.runMinutes = function () {
+    return (Date.now() - Game.startDate) / 60000;
+};
+
+// What this run is going for: Neverclick first (no clicks), then Speed baking (clicking flat out,
+// 1 million cookies within 15 minutes), each in its own Born Again run.
+FCP.runPlan = function () {
+    if (!FCP.inChallengeRun()) return null;
+    var neverclickPossible = (!FCP.has("True Neverclick") && Game.cookieClicks == 0) || (!FCP.has("Neverclick") && Game.cookieClicks <= 15);
+    if (neverclickPossible && Game.cookiesEarned < 10000000) return "neverclick";
+    if (!FCP.speedNames.every(FCP.has) && FCP.runMinutes() <= 35.5 && !FCP.speedDone()) return "speed";
+    return null;
+};
+
+// Speed baking: the game checks every 5 seconds, so keep going a few seconds past 1 million.
+FCP.speedDone = function () {
+    if (Game.cookiesEarned < 1000000) {
+        FCP.reached1M = 0;
+        return false;
+    }
+    if (!FCP.reached1M) FCP.reached1M = Date.now();
+    return Date.now() - FCP.reached1M > 6000;
+};
+
 FCP.noClickActive = function () {
-    if (!FCP.inChallengeRun()) return false;
-    // The game only checks these every few seconds: keep blocking a little
-    // past 1 million (up to 10 million).
-    if (Game.cookiesEarned >= 10000000) return false;
-    if (!FCP.has("True Neverclick") && Game.cookieClicks == 0) return true;
-    if (!FCP.has("Neverclick") && Game.cookieClicks <= 15) return true;
-    return false;
+    return FCP.runPlan() === "neverclick";
+};
+
+FCP.speedActive = function () {
+    return FCP.runPlan() === "speed";
 };
 
 FCP.hardcoreActive = function () {
     return (
         FCP.inChallengeRun() &&
         FrozenCookies.challengeRuns == 2 &&
+        FCP.runPlan() !== "speed" &&
         !FCP.has("Hardcore") &&
         Game.UpgradesOwned == 0 &&
         Game.cookiesEarned < 2000000000
     );
+};
+
+// Clicks the big cookie as fast as the game allows (50/s) during a Speed baking run.
+FCP.speedClick = function () {
+    if (!FCP.busy() && FCP.speedActive()) Game.ClickCookie();
+};
+
+// Remember (across reloads) that FC+ started the current Born Again run, so it only ever ends
+// its own challenge runs, never one you started yourself.
+FCP.challengeFlag = function (value) {
+    try {
+        if (value === undefined) return localStorage.getItem("fcpChallengeRun") === "1";
+        if (value) localStorage.setItem("fcpChallengeRun", "1");
+        else localStorage.removeItem("fcpChallengeRun");
+    } catch (e) {}
+    return !!value;
 };
 
 var _fcpOriginalClickCookie = fcClickCookie;
@@ -199,11 +257,16 @@ FCP.patchReincarnate = function () {
     if (Game.Reincarnate.__fcp) return;
     var original = Game.Reincarnate;
     var patched = function (bypass) {
-        if (bypass && FrozenCookies.challengeRuns && !FCP.challengeExit && FCP.challengeGoals().length) {
+        var goals = FCP.challengeGoals();
+        if (bypass && FrozenCookies.challengeRuns && !FCP.challengeExit && !FCP.marathonReincarnating && goals.length) {
             Game.nextAscensionMode = 1;
-            FCP.log("Reincarnating in Born Again mode for: " + FCP.challengeGoals().join(", ") + ".", true);
+            FCP.challengeFlag(true);
+            FCP.log("Reincarnating in Born Again mode for: " + goals.map(FCP.goalLabel).join(", ") + ".", true);
+        } else if (bypass && Game.nextAscensionMode != 1) {
+            FCP.challengeFlag(false);
         }
         FCP.challengeExit = false;
+        FCP.reached1M = 0;
         return original.apply(this, arguments);
     };
     patched.__fcp = true;
@@ -236,28 +299,34 @@ FCP.challengeTick = function () {
         FrozenCookies.recalculateCaches = true;
     }
 
-    // What is being held back right now (this run).
+    var plan = FCP.runPlan();
     var rules = [];
-    if (FCP.noClickActive()) rules.push("no big cookie clicks until 1 million baked (golden cookies still clicked)");
+    if (plan === "neverclick") rules.push("no big cookie clicks until 1 million baked (golden cookies still clicked)");
+    if (plan === "speed") rules.push("clicking flat out for 1 million within 15 min (" + FCP.runMinutes().toFixed(1) + " min so far)");
     if (FCP.hardcoreActive()) rules.push("no upgrades until 1 billion baked");
-    var goals = FCP.challengeGoals().join(" + ").replace("neverclick", "Neverclick").replace("hardcore", "Hardcore");
+    var goals = FCP.challengeGoals().map(FCP.goalLabel).join(" + ");
 
     if (Game.ascensionMode != 1) {
         if (rules.length) {
             // Before the first ascension these achievements count without Born Again.
-            FCP.status["Challenge runs"] = "this run (no ascension yet) goes for " + goals + ": " + rules.join(", ");
+            FCP.status["Challenge runs"] = "this run (no ascension yet) goes for " + FCP.goalLabel(plan || "hardcore") + ": " + rules.join(", ");
         } else {
             FCP.status["Challenge runs"] = goals ? "next reincarnation will be Born Again, for " + goals : "all done";
         }
         return;
     }
 
-    var waiting = FCP.noClickActive() || FCP.hardcoreActive();
+    if (!FCP.challengeFlag()) {
+        FCP.status["Challenge runs"] = rules.length ? "your Born Again run: " + rules.join(", ") : "";
+        return;
+    }
+    var waiting = rules.length > 0;
     FCP.status["Challenge runs"] = waiting
-        ? "Born Again run for " + goals + ": " + rules.join(", ")
+        ? "Born Again run: " + rules.join(", ")
         : "Born Again run done, ascending back to a normal run";
-    if (!waiting && Game.cookiesEarned >= 1000000) {
+    if (!waiting && (Game.cookiesEarned >= 1000000 || FCP.runMinutes() > 36)) {
         FCP.challengeExit = true;
+        FCP.challengeFlag(false);
         FCP.log("Challenge run finished, ascending back to a normal run.", true);
         Game.Ascend(1);
     }
@@ -294,7 +363,17 @@ FCP.manualHints = {
 FCP.classifyAchievement = function (a) {
     var n = a.name;
     if (a.pool === "dungeon") return ["Unobtainable (dungeons)", ""];
-    if (FCP.manualHints[n] && !/^(Stifling the press)$/.test(n))
+    var tricks = /^(Stifling the press|Cookie-dunker|Baby it's old outside)$/;
+    var shadows = /^(God complex|In her likeness|Last Chance to See|When the cookies ascend just right)$/;
+    if (tricks.test(n)) return FrozenCookies.achievementTricks ? ["FC+ UI tricks", n === "Baby it's old outside" ? "during Christmas" : ""] : ["Manual", FCP.manualHints[n]];
+    if (shadows.test(n)) return FrozenCookies.shadowAchievements ? ["FC+ Shadow achievements", n === "When the cookies ascend just right" ? "at the next auto-ascension with 1 trillion+ in the bank" : ""] : ["Manual", FCP.manualHints[n]];
+    if (n === "No time like the present") return FrozenCookies.achievementHunter ? ["FC+ Achievement Hunter", "needs the Wrapping paper heavenly upgrade"] : ["Manual", FCP.manualHints[n]];
+    if (n === "Cheated cookies taste awful" || n === "Four-leaf cookie") return FrozenCookies.cheatAchievement ? ["FC+ Cheat (opt-in)", ""] : ["Manual", "turn on the Cheat achievements option"];
+    if (n === "Endless cycle") return FrozenCookies.ascensionMarathon ? ["FC+ Ascension marathon", Game.resets + " / 1000"] : ["Manual", "turn on Ascension marathon (one ascension per prestige level, best late in the game)"];
+    if (/^Speed baking/.test(n)) return FrozenCookies.challengeRuns ? ["FC+ Challenge runs", "Born Again run, clicking flat out"] : ["Manual", FCP.manualHints[n]];
+    if (/^(Seven horseshoes|Gaseous assets)$/.test(n)) return ["Time (FC keeps doing it)", n === "Seven horseshoes" ? Game.goldenClicks + " / 27,777 golden cookies" : "stock market profit, Auto-stocks"];
+    if (n === "All-natural cane sugar") return ["Luck / time", "harvest a golden sugar lump (rare lump type)"];
+    if (FCP.manualHints[n])
         return [/lucky|year|Speed|exactly/.test(FCP.manualHints[n]) || a.pool === "shadow" ? "Manual / luck / shadow" : "Manual", FCP.manualHints[n]];
     if (n === "Stifling the press")
         return FrozenCookies.achievementTricks ? ["FC+ Achievement Hunter", ""] : ["Manual", FCP.manualHints[n]];
@@ -350,4 +429,5 @@ FCP.achievementReport = function () {
 
 FCP.addTask("hunter", function () { return !!FrozenCookies.achievementHunter; }, FCP.hunterTick, 2000);
 FCP.addTask("challenge", function () { return !!FrozenCookies.challengeRuns; }, FCP.challengeTick, 2000);
+FCP.addTask("speedclick", function () { return !!FrozenCookies.challengeRuns; }, FCP.speedClick, 20);
 FCP.addTask("elder", function () { return !!FrozenCookies.elderPledgeAchievs; }, FCP.elderTick, 5000);

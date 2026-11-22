@@ -6,6 +6,10 @@
 
 FCP.clicks = { samples: [], measured: null };
 
+// The game ignores a click less than 20 ms after the previous one: 50 clicks per second at most,
+// whatever the autoclicker is set to.
+FCP.MAX_CLICKS = 50;
+
 FCP.clickTick = function () {
     var now = Date.now();
     var s = FCP.clicks.samples;
@@ -28,13 +32,14 @@ FCP.measuredClickRate = function () {
 // Ratio between real and configured autoclicking, at most 1.
 FCP.clickRatio = function () {
     var m = FCP.clicks.measured,
-        set = FrozenCookies.cookieClickSpeed;
+        set = Math.min(FrozenCookies.cookieClickSpeed, FCP.MAX_CLICKS);
     if (m === null || !(set > 0)) return 1;
     return Math.max(0, Math.min(1, m / set));
 };
 
 var _fcpOriginalBaseClickingCpsForRate = baseClickingCps;
 baseClickingCps = function (clickSpeed) {
+    if (clickSpeed > FCP.MAX_CLICKS) clickSpeed = FCP.MAX_CLICKS;
     if (clickSpeed > 0 && FrozenCookies.measuredClicks) clickSpeed *= FCP.clickRatio();
     return _fcpOriginalBaseClickingCpsForRate.call(this, clickSpeed);
 };
@@ -45,7 +50,7 @@ FCP.cookieRate = function () {
     var rate = Game.cookiesPs;
     var clicking = FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed && !(FCP.noClickActive && FCP.noClickActive());
     if (clicking) {
-        var speed = FrozenCookies.cookieClickSpeed;
+        var speed = Math.min(FrozenCookies.cookieClickSpeed, FCP.MAX_CLICKS);
         if (FrozenCookies.measuredClicks && FCP.clicks.measured !== null) speed = FCP.clicks.measured;
         rate += Game.computedMouseCps * speed;
     }

@@ -22,8 +22,23 @@ FCP.preferenceValues = {
         default: 0,
     },
     achievementTricks: {
-        hint: "Also fake a squished window for 'Stifling the press'.",
-        display: ["Window tricks OFF", "Window tricks ON"],
+        hint: "UI tricks: fake a squished window for 'Stifling the press' and a short one for 'Cookie-dunker', and hold the mouse on a Santa's helper grandma at Christmas for 'Baby it's old outside'. Only for the moment the game checks.",
+        display: ["UI tricks OFF", "UI tricks ON"],
+        default: 0,
+    },
+    shadowAchievements: {
+        hint: "Shadow achievements: God complex (renamed for an instant), In her likeness (You customizer, then your look is restored), Last Chance to See (pop the shiny wrinkler), When the cookies ascend just right (bank set to exactly 1 trillion before ascending).",
+        display: ["Shadow achievements OFF", "Shadow achievements ON"],
+        default: 0,
+    },
+    ascensionMarathon: {
+        hint: "Endless cycle: ascend 1,000 times. The game only counts an ascension that gains a prestige level, so FC ascends as soon as the run is worth one more level. Each run is very short, so the run's own progress is lost every time: best late in the game, when a level takes seconds.",
+        display: ["Ascension marathon OFF", "Ascension marathon ON"],
+        default: 0,
+    },
+    cheatAchievement: {
+        hint: "Cheats for one achievement check, put back right after: Cheated cookies taste awful (a bank a hair over everything ever baked) and Four-leaf cookie (4 golden cookies counted on screen). Golden cookies only come one at a time, and Cookie Storm drops don't count. Off unless you turn it on.",
+        display: ["Cheat achievements OFF", "Cheat achievements ON"],
         default: 0,
     },
     elderPledgeAchievs: {
@@ -32,11 +47,11 @@ FCP.preferenceValues = {
         default: 0,
     },
     challengeRuns: {
-        hint: "Neverclick, True Neverclick and Hardcore only count in a Born Again run. When FC reincarnates and one is missing, do a short Born Again run without clicking (and without upgrades for Hardcore, which takes a few hours), then ascend back.",
+        hint: "Neverclick, True Neverclick, Speed baking and Hardcore only count in a Born Again run (or before the first ascension). When FC reincarnates and one is missing, it does a Born Again run: first without clicking (Neverclick), then clicking flat out for 1 million cookies within 15 minutes (Speed baking), then ascends back. Hardcore (no upgrades until 1 billion) takes a few hours.",
         display: [
             "Challenge runs OFF",
-            "Challenge runs NEVERCLICK",
-            "Challenge runs NEVERCLICK + HARDCORE",
+            "Challenge runs NEVERCLICK + SPEED BAKING",
+            "Challenge runs NEVERCLICK + SPEED BAKING + HARDCORE",
         ],
         default: 0,
     },
@@ -206,7 +221,8 @@ recommendedSettingsAction = function () {
     var r = _fcpOriginalRecommended.apply(this, arguments);
     if (applying) {
         FrozenCookies.achievementHunter = 1;
-        FrozenCookies.achievementTricks = 0;
+        FrozenCookies.achievementTricks = 1;
+        FrozenCookies.shadowAchievements = 1;
         FrozenCookies.elderPledgeAchievs = 1;
         FrozenCookies.challengeRuns = 1;
         FrozenCookies.autoLumps = 2;

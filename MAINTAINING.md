@@ -14,7 +14,8 @@
 | `frozen_cookies.js` | Loader: version (`version`), game versions (`steamGameVersion`, `lastCompatibleVersion`), file load order |
 | `src/fc_*.js`, `src/cc_upgrade_prerequisites.js` | Upstream Frozen Cookies (erbkaiser's fork, erb-2.052.8), **unmodified** |
 | `src/fcp_core.js` | Plus: new options in the FC menu, scheduler (wraps `FCStart`), helpers, achievement tracker in the menu |
-| `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again), tracker categories |
+| `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
+| `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
 | `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`) |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`) |
@@ -66,7 +67,8 @@ mirrored at github.com/ozh/cookieclicker, commit `b843fa7` = web 2.052, the same
 then loads the built bundle into it with Electron-like `module`/`exports` globals, as on Steam.
 
 - `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks, the menu tracker and saving.
-- `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending and a full Born Again run.
+- `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
+- `shadow.spec.mjs`: every UI trick, shadow achievement, the gift, the marathon and the cheats, and that each puts the game back as it was.
 - `garden.spec.mjs`: forces thousands of garden ticks; all seeds must unlock, then the sacrifice.
 - `bulk.spec.mjs`: smart bulk counts (full 100 early, never below the bank, stops at worse value) and FC's autobuy at x100.
 - `clicks.spec.mjs`: the click rate measurement and where it is used.

@@ -28,7 +28,7 @@ var baseUrl =
 var FrozenCookies = {
     baseUrl: baseUrl,
     branch: "plus",
-    version: "1.4.0", // keep in sync with Steam info.txt (tools/build.mjs reads it from here)
+    version: "1.5.0", // keep in sync with Steam info.txt (tools/build.mjs reads it from here)
     upstreamVersion: "erb-2.052.8",
     modId: "frozen_cookies_plus",
 };
@@ -60,6 +60,7 @@ var fcScriptList = [
     "src/fc_infobox.js",
     "src/fcp_core.js",
     "src/fcp_achievements.js",
+    "src/fcp_shadow.js",
     "src/fcp_lumps.js",
     "src/fcp_market.js",
     "src/fcp_bulk.js",

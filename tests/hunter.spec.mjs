@@ -98,3 +98,34 @@ test("with clicks held back for Neverclick, FC values purchases without the auto
   expect(await pick({ challengeRuns: 1, autoClick: 1, cookieClickSpeed: 250 })).toBe("Cursor");
   noErrors(errors);
 });
+
+test("after Neverclick, a Born Again run goes for Speed baking: clicking flat out, then back to normal", async ({ page }) => {
+  test.setTimeout(300_000);
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 20, cookies: 1e12 });
+  await page.evaluate(() => { Game.Win("True Neverclick"); Game.Win("Neverclick"); });
+  await setOptions(page, { challengeRuns: 1 });
+  await page.waitForTimeout(2500);
+  await page.evaluate(() => Game.Ascend(1));
+  await page.waitForFunction(() => Game.OnAscend == 1, null, { timeout: 90_000 });
+  await page.evaluate(() => Game.Reincarnate(1));
+  await page.waitForFunction(() => !Game.OnAscend && !Game.ReincarnateTimer, null, { timeout: 90_000 });
+  expect(await page.evaluate(() => [Game.ascensionMode, FCP.runPlan()])).toEqual([1, "speed"]);
+  // FC+ clicks the cookie itself during a speed run.
+  await expect.poll(() => page.evaluate(() => Game.cookieClicks), { timeout: 10_000 }).toBeGreaterThan(20);
+  await page.evaluate(() => Game.Earn(2e6));
+  await expect.poll(() => won(page, "Speed baking III"), { timeout: 30_000 }).toBeTruthy();
+  await page.waitForFunction(() => Game.ascensionMode == 0 && !Game.OnAscend && !Game.AscendTimer && Game.cookiesEarned < 1e6,
+    null, { timeout: 120_000 });
+  noErrors(errors);
+});
+
+test("a Born Again run you start yourself is never ended by FC+", async ({ page }) => {
+  const errors = await loadGame(page);
+  await page.evaluate(() => { localStorage.removeItem("fcpChallengeRun"); Game.resets = 1; Game.ascensionMode = 1; Game.Win("True Neverclick"); Game.Win("Neverclick");
+    FCP.speedNames.forEach((n) => Game.Win(n)); Game.Earn(5e6); });
+  await setOptions(page, { challengeRuns: 1 });
+  await page.waitForTimeout(5000);
+  expect(await page.evaluate(() => [Game.ascensionMode, !!Game.OnAscend])).toEqual([1, false]);
+  noErrors(errors);
+});
