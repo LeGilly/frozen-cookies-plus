@@ -18,6 +18,10 @@ test("building rows show a rating colour, income gain and share of production", 
   await setOptions(page, { autoBuy: 0, insights: 1 });
   const mine = page.locator("#product3 .fcpProdInfo");
   await expect(mine).toContainText(/\+[\d.<]+% income · [\d.]+% of production/, { timeout: 10_000 });
+  // The numbers are coloured: the best income gain among the buildings is green.
+  const colours = await page.evaluate(() => [...document.querySelectorAll(".fcpProdInfo b")].map((b) => b.style.color));
+  expect(colours.length).toBeGreaterThan(2);
+  expect(colours).toContain("rgb(105, 240, 174)");
   expect(await page.locator("#product3 .fcpProdBar").evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe("");
   // Every store upgrade gets a rating dot; exactly one thing in the store is the best buy (green).
   await expect(page.locator("#upgrade0 .fcpUpgDot")).toHaveCount(1);

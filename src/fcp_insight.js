@@ -159,9 +159,21 @@ FCP.insightCss =
     ".fcpProdInfo{position:absolute;left:66px;bottom:3px;font:bold 10px/12px Arial,sans-serif;color:#fff;" +
     "background:rgba(0,0,0,0.72);border-radius:6px;padding:0 5px;pointer-events:none;z-index:5;white-space:nowrap;}" +
     ".fcpProdInfo:empty{display:none;}" +
+    ".fcpProdInfo b{font-weight:bold;}" +
     ".fcpProdBar{position:absolute;left:0;top:0;bottom:0;width:5px;pointer-events:none;z-index:5;}" +
     ".fcpUpgDot{position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;" +
     "border:1px solid rgba(0,0,0,0.8);box-shadow:0 0 2px #000;pointer-events:none;z-index:5;}";
+
+// Badge number colours, brightest = biggest. Income gain is compared with the best gain among
+// the buildings (what one more of each would add); share of production uses fixed steps.
+FCP.badgeScale = ["#69f0ae", "#c6ff00", "#ffeb3b", "#ffab40", "#b0bec5"];
+FCP.gainColor = function (gain, best) {
+    var r = best > 0 ? gain / best : 0;
+    return FCP.badgeScale[r >= 0.9 ? 0 : r >= 0.5 ? 1 : r >= 0.2 ? 2 : r >= 0.05 ? 3 : 4];
+};
+FCP.shareColor = function (share) {
+    return FCP.badgeScale[share >= 0.25 ? 0 : share >= 0.1 ? 1 : share >= 0.03 ? 2 : share >= 0.01 ? 3 : 4];
+};
 
 FCP.refreshStore = function () {
     if (!document.getElementById("fcpInsightCss")) {
@@ -171,6 +183,14 @@ FCP.refreshStore = function () {
         document.head.appendChild(st);
     }
     var on = !!FrozenCookies.insights;
+    var bestGain = 0;
+    Game.ObjectsById.forEach(function (o) {
+        var d = FCP.insight.byKey["building:" + o.id];
+        if (!o.locked && d && d.deltaCps > 0 && d.gain > bestGain) bestGain = d.gain;
+    });
+    var span = function (color, value, label) {
+        return '<b style="color:' + color + '">' + value + "</b> " + label;
+    };
     Game.ObjectsById.forEach(function (o) {
         var row = document.getElementById("product" + o.id);
         if (!row) return;
@@ -193,9 +213,13 @@ FCP.refreshStore = function () {
         var rating = FCP.ratingOf(data);
         bar.style.background = rating.color;
         var parts = [];
-        if (data && data.deltaCps > 0) parts.push("+" + FCP.pct(data.gain) + " income");
-        if (o.amount > 0) parts.push(FCP.pct(FCP.buildingShare(o)) + " of production");
-        info.textContent = parts.join(" · ");
+        if (data && data.deltaCps > 0) parts.push(span(FCP.gainColor(data.gain, bestGain), "+" + FCP.pct(data.gain), "income"));
+        if (o.amount > 0) {
+            var share = FCP.buildingShare(o);
+            parts.push(span(FCP.shareColor(share), FCP.pct(share), "of production"));
+        }
+        var html = parts.join(" · ");
+        if (info.innerHTML !== html) info.innerHTML = html;
     });
     // Store upgrades: element "upgrade<i>" is Game.UpgradesInStore[i].
     (Game.UpgradesInStore || []).forEach(function (u, i) {

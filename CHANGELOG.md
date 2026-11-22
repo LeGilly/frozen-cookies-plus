@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.5.1 · 2026-11-22
+- Store badges: the income gain and share of production numbers are coloured, green for the biggest down to grey for the smallest
+
 ## 1.5.0 · 2026-11-22
 - UI tricks (on in Recommended) now also earn Cookie-dunker and, at Christmas, Baby it's old outside
 - Shadow achievements (new option, on in Recommended): God complex, In her likeness, Last Chance to See, and When the cookies ascend just right (the bank is set to exactly 1 trillion before FC ascends)
