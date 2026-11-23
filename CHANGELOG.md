@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.2 · 2026-11-23
+- Smart dragon auras switch auras directly (same cost as the game's button: one of your most expensive buildings) instead of going through the aura prompt, which left the dragon menu open over the info panel
+- When FC trains the dragon with its menu closed, the menu is closed again afterwards (the game opens it on every training); training from an open menu leaves it open
+
 ## 1.8.1 · 2026-11-23
 - Infobox: the next golden cookie time is worked out from the game's own timer instead of FC's estimate. FC rebuilt the timer from the upgrades owned now, so buying Lucky day or Serendipity moved it at once (they only apply to the next golden cookie) and the line could run out and vanish before the cookie came; it also left out Heavenly luck, auras, gods and other modifiers
 - The earliest and latest times are now the game's hard limits (FC showed 1% and 99% chances), so they count down with the clock; the line also says when a golden cookie is on screen or the Golden switch is on

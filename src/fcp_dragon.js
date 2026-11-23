@@ -59,12 +59,41 @@ FCP.bestAuras = function () {
     return best;
 };
 
+// Set an aura the way the game's confirm button does (the aura, then one of the most expensive
+// buildings), without opening the aura prompt or the dragon menu.
 FCP.setAura = function (aura, slot) {
-    Game.specialTab = "dragon";
-    Game.SetDragonAura(aura, slot);
-    Game.ConfirmPrompt(); // the game takes the building and sets the aura
-    if (Game.promptOn) Game.ClosePrompt();
+    var current = slot ? Game.dragonAura2 : Game.dragonAura;
+    if (current === aura) return;
+    var highest = 0;
+    for (var i in Game.Objects) if (Game.Objects[i].amount > 0) highest = Game.Objects[i];
+    if (slot) Game.dragonAura2 = aura;
+    else Game.dragonAura = aura;
+    if (highest) highest.sacrifice(1);
+    Game.recalculateGains = 1;
 };
+
+FCP.specialMenuOpen = function () {
+    var el = l("specialPopup");
+    return !!(el && / onScreen/.test(el.className));
+};
+
+// Training the dragon opens its menu (the game does that for its own button). When FC trains
+// it with the menu closed, close it again so it doesn't sit over the info panel.
+if (!Game.UpgradeDragon.__fcpMenu) {
+    (function () {
+        var upgrade = Game.UpgradeDragon;
+        Game.UpgradeDragon = function () {
+            var wasOpen = FCP.specialMenuOpen();
+            var r = upgrade.apply(this, arguments);
+            if (!wasOpen && FCP.specialMenuOpen()) {
+                Game.specialTab = Game.specialTab || "dragon"; // the game only closes a menu with a tab set
+                Game.ToggleSpecialMenu(0);
+            }
+            return r;
+        };
+        Game.UpgradeDragon.__fcpMenu = true;
+    })();
+}
 
 FCP.dragonTick = function () {
     if (!FrozenCookies.smartAuras || !Game.Has("A crumbly egg") || Game.OnAscend || Game.AscendTimer) return;

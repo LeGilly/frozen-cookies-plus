@@ -15,6 +15,8 @@ test("a young dragon gets the best aura it knows, paid with one top building", a
   await setOptions(page, { smartAuras: 1, autoBuy: 0 });
   await expect.poll(() => auras(page), { timeout: 15_000 }).toEqual(["Radiant Appetite", "No aura"]);
   expect(await page.evaluate((n) => Game.Objects[n].amount, top[0])).toBe(top[1] - 1);
+  // No prompt or dragon menu left open over the info panel.
+  expect(await page.evaluate(() => [!!Game.promptOn, / onScreen/.test(l("specialPopup").className)])).toEqual([false, false]);
   noErrors(errors);
 });
 
@@ -39,5 +41,18 @@ test("off: nothing is changed", async ({ page }) => {
   await setOptions(page, { smartAuras: 0, autoBuy: 0, autoDragonToggle: 0 });
   await page.waitForTimeout(6000);
   expect(await auras(page)).toEqual(["No aura", "No aura"]);
+  noErrors(errors);
+});
+
+test("training the dragon with its menu closed leaves it closed; with it open, open", async ({ page }) => {
+  const errors = await loadGame(page);
+  await dragon(page, 6); // the next level costs 100 of the second building
+  const open = () => page.evaluate(() => / onScreen/.test(l("specialPopup").className));
+  await page.evaluate(() => Game.UpgradeDragon());
+  expect(await page.evaluate(() => Game.dragonLevel)).toBe(7);
+  expect(await open()).toBe(false);
+  await page.evaluate(() => { Game.specialTab = "dragon"; Game.ToggleSpecialMenu(1); Game.UpgradeDragon(); });
+  expect(await page.evaluate(() => Game.dragonLevel)).toBe(8);
+  expect(await open()).toBe(true);
   noErrors(errors);
 });
