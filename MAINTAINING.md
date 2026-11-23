@@ -16,6 +16,7 @@
 | `src/fcp_core.js` | Plus: new options in the FC menu, scheduler (wraps `FCStart`), helpers, achievement tracker in the menu |
 | `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
 | `src/fcp_bankrules.js` | Bank rules: wraps `autoGSBuy`, `autoGodzamokAction`, `autoEasterAction`, `autoHalloweenAction`, `buyOtherUpgrades` (with `Game.Upgrade.prototype.buy`) and `isRewardCookie`. Loaded before fcp_bankwatch.js so the bank watcher sees the wrapped versions |
+| `src/fcp_dragon.js` | Smart dragon auras: tries each pair of known auras with `Game.CalculateGains()` (with `Game.Win` stubbed so nothing is won from a pair not worn), switches with `Game.SetDragonAura` + `Game.ConfirmPrompt`. Wraps FC's `autoDragonAura0Action`/`autoDragonAura1Action` |
 | `src/fcp_ascend.js` | Smart ascension: when to ascend, `FCP.autoAscend(why)` (every ascension FC+ makes goes through it), the heavenly upgrade buyer (`FCP.heavenlyPriority`, wraps `Game.Reincarnate`), and the autoCookie wrapper that sets FC's own auto-ascend aside |
 | `src/fcp_bankwatch.js` | Why the golden cookie bank is below full. Wraps `Game.Spend`, `Game.Upgrade.prototype.buy`, each building's `buy`, `Game.storeBuyAll`, `Game.UpgradeSanta`, `Game.UpgradeDragon`, `autoCookie` and FC's actions that skip the bank (`autoGSBuy`, `buyOtherUpgrades`, season, dragon, bank office, Godzamok, reward cookies) to note what was bought and by whom. `FCP.addTask` files a task's spending under "FC+ (name)" |
 | `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
@@ -71,6 +72,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 
 - `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks, the menu tracker and saving.
 - `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
+- `dragon.spec.mjs`: the best known aura, the second slot at the top level, no switching back and forth, off leaves auras alone.
 - `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount.
 - `bankrules.spec.mjs`: the Golden switch and Godzamok worth checks, extra upgrades waiting for the bank, reward cookies.
 - `bankwatch.spec.mjs`: each reason the bank is below full.

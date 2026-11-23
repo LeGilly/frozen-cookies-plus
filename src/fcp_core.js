@@ -99,6 +99,11 @@ FCP.preferenceValues = {
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
         default: 0,
     },
+    smartAuras: {
+        hint: "Smart dragon auras: always the best auras your dragon knows, worked out from your production and clicking (FC's own setting waits for two fixed auras, so a young dragon has none). Switches when a better one is learned or the second slot opens; each switch costs one of your most expensive buildings, as in the game (see fcp_dragon.js).",
+        display: ["Smart dragon auras OFF", "Smart dragon auras ON"],
+        default: 0,
+    },
     smartAscend: {
         hint: "Smart ascension: first ascension at 440 prestige levels, then whenever ascending doubles your prestige; waits out Frenzies and click buffs and pops the wrinklers first. On the ascension screen FC+ buys the heavenly upgrades (most useful first) before reincarnating, for every ascension it makes itself. Replaces FC's own Auto Ascend while on (see fcp_ascend.js).",
         display: ["Smart ascension OFF", "Smart ascension ON"],
@@ -251,6 +256,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.smartBulk = 1;
         FrozenCookies.bankRules = 1;
         FrozenCookies.smartAscend = 1;
+        FrozenCookies.smartAuras = 1;
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;

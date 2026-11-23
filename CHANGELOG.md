@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.8.0 · 2026-11-23
+- Smart dragon auras (new option, on in Recommended): the dragon always wears the best auras it knows, worked out from your production and clicking at your measured speed, instead of FC's two fixed auras (which left a young dragon with none until it learned them). It switches when a better aura is learned or the second slot opens, only for at least 1% more, since each switch costs one of your most expensive buildings. Candidates: Breath of Milk, Dragon Cursor, Elder Battalion, Dragon God, Radiant Appetite, Reality Bending
+
 ## 1.7.3 · 2026-11-23
 - The infobox panel moves right when Santa or the dragon is shown at the bottom left, so they are no longer hidden behind it
 
