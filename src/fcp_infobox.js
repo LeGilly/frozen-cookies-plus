@@ -144,6 +144,8 @@ FCP.infoLines = function (t_d) {
             Math.floor(pct * 100) + "% of " + Beautify(bankTotal) +
                 (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full") + " (so Lucky! pays the most)"
         );
+        var why = pct < 1 && FCP.bankWatch && FCP.bankWatch.why;
+        if (why) line("#9e9e9e", "Why not full", why);
     }
 
     if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {

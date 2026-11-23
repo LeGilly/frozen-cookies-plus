@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0 · 2026-11-23
+- Infobox: when the golden cookie bank is below full, a "Why not full" line says why: a purchase raised the income so the bank to aim for grew, FC kept a smaller bank to buy something sooner, something was bought by an FC action that doesn't wait for the bank (named), you bought something, or cookies were lost to a wrath cookie or a spell backfire
+- Bank rules (new option, on in Recommended) for FC's purchases that didn't wait for the bank:
+  - FC's extra upgrades (eggs, sleighs, Fern tea...) and the Halloween switch now wait for the bank
+  - Reward cookies are left to FC's normal chain, which buys their buildings one at a time and keeps the bank (FC's shortcut bought all of them at any price, down to zero cookies)
+  - The Golden switch is turned on for a click buff only when the extra clicking, at your measured click speed, beats the price of switching on and off
+  - The Godzamok combo only fires when its clicking bonus beats what reselling the mines and factories loses
+  - The Easter switch during a Cookie Storm only while it costs under a tenth of the bank (its price grows ×1.5 with every season switch)
+
 ## 1.5.1 · 2026-11-22
 - Store badges: the income gain and share of production numbers are coloured, green for the biggest down to grey for the smallest
 

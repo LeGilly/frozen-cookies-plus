@@ -99,6 +99,11 @@ FCP.preferenceValues = {
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
         default: 0,
     },
+    bankRules: {
+        hint: "Bank rules: FC's extra upgrades, the Halloween switch and reward cookie buildings wait for the golden cookie bank; the Golden switch and the Godzamok combo only fire when the extra clicking (at your measured click speed) beats their cost; the Easter switch during a Cookie Storm only while cheap (see fcp_bankrules.js).",
+        display: ["Bank rules OFF", "Bank rules ON"],
+        default: 0,
+    },
 };
 
 (function insertPreferences() {
@@ -188,7 +193,17 @@ FCP.has = function (name) {
 // ---------------------------------------------------------------------------
 FCP.tasks = []; // {name, pref, test(), fn, every}
 FCP.addTask = function (name, test, fn, every) {
-    FCP.tasks.push({ name: name, test: test, fn: FCP.safe(name, fn), every: every });
+    // Cookies spent by a task are filed under "FC+ (name)" (see fcp_bankwatch.js).
+    var run = function () {
+        var keep = FCP.spendSource;
+        if (!keep) FCP.spendSource = "FC+ (" + name + ")";
+        try {
+            return fn.apply(this, arguments);
+        } finally {
+            FCP.spendSource = keep;
+        }
+    };
+    FCP.tasks.push({ name: name, test: test, fn: FCP.safe(name, run), every: every });
 };
 
 FCP.restart = function () {
@@ -229,6 +244,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.autoGarden = 1;
         FrozenCookies.autoStocks = 1;
         FrozenCookies.smartBulk = 1;
+        FrozenCookies.bankRules = 1;
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;
