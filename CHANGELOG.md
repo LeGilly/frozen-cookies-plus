@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.8.1 · 2026-11-23
+- Infobox: the next golden cookie time is worked out from the game's own timer instead of FC's estimate. FC rebuilt the timer from the upgrades owned now, so buying Lucky day or Serendipity moved it at once (they only apply to the next golden cookie) and the line could run out and vanish before the cookie came; it also left out Heavenly luck, auras, gods and other modifiers
+- The earliest and latest times are now the game's hard limits (FC showed 1% and 99% chances), so they count down with the clock; the line also says when a golden cookie is on screen or the Golden switch is on
+
 ## 1.8.0 · 2026-11-23
 - Smart dragon auras (new option, on in Recommended): the dragon always wears the best auras it knows, worked out from your production and clicking at your measured speed, instead of FC's two fixed auras (which left a young dragon with none until it learned them). It switches when a better aura is learned or the second slot opens, only for at least 1% more, since each switch costs one of your most expensive buildings. Candidates: Breath of Milk, Dragon Cursor, Elder Battalion, Dragon God, Radiant Appetite, Reality Bending
 

@@ -88,6 +88,37 @@ FCP.hunterWaiting = function () {
 // ---------------------------------------------------------------------------
 // Panel content
 // ---------------------------------------------------------------------------
+// When the next golden cookie comes, from the game's own timer. The game fixes the earliest
+// and latest time when the last golden cookie goes away (upgrades bought since apply to the
+// next one), then each frame past the earliest one spawns with chance
+// ((time - earliest) / (latest - earliest))^5. FC's estimate rebuilt the times from the
+// upgrades owned now (so buying Lucky day moved it at once, and it could run out before the
+// cookie came) and left out several modifiers (Heavenly luck, auras, gods...).
+// "likely" is the median of what is left: as time passes without a cookie, it shrinks more
+// slowly than the clock. The earliest and latest times are hard limits and tick in real time.
+FCP.gcTimes = function () {
+    var g = Game.shimmerTypes && Game.shimmerTypes.golden;
+    if (!g || !(g.maxTime > g.minTime)) return null;
+    if (g.spawned) return { state: "onscreen" };
+    if (!g.spawnConditions()) return { state: "paused" };
+    var fps = Game.fps, t = g.time, min = g.minTime, max = g.maxTime;
+    var survive = 1, likely = null, frame = t;
+    while (frame < max) {
+        frame++;
+        var p = frame > min ? Math.pow((frame - min) / (max - min), 5) : 0;
+        survive *= 1 - Math.min(1, p);
+        if (likely === null && survive <= 0.5) likely = frame;
+        if (survive <= 0) break;
+    }
+    if (likely === null) likely = max;
+    return {
+        state: "waiting",
+        earliest: Math.max(0, min - t) / fps,
+        likely: Math.max(0, likely - t) / fps,
+        latest: Math.max(0, max - t) / fps,
+    };
+};
+
 FCP.infoLines = function (t_d) {
     var lines = [];
     var head = function (text) { lines.push({ head: true, label: text }); };
@@ -161,22 +192,18 @@ FCP.infoLines = function (t_d) {
         line("#80cbc4", "Clicking", clickText);
     }
 
-    var gMin = byPrefix("GC Minimum"),
-        gEst = byPrefix("GC Estimate"),
-        gMax = byPrefix("GC Maximum");
-    // A bound that has already passed is shown by FC as "" (or "Done!").
-    var left = function (o) {
-        return o && o.display && !/done/i.test(o.display) ? o.display : "";
-    };
-    if (gEst || gMax) {
-        var est = left(gEst),
-            min = left(gMin),
-            max = left(gMax);
-        var text;
-        if (est && min) text = "likely in " + est + (max ? " (between " + min + " and " + max + ")" : "");
-        else if (est) text = "likely in " + est + " (could appear any moment" + (max ? ", at the latest in " + max : "") + ")";
-        else text = "any moment now" + (max ? " (at the latest in " + max + ")" : "");
-        line("#ffde5f", "Next golden cookie", text);
+    var gc = FCP.gcTimes();
+    if (gc) {
+        var gcText;
+        if (gc.state === "onscreen") gcText = "one is on screen";
+        else if (gc.state === "paused") gcText = "none while the Golden switch is on";
+        else {
+            var fmt = function (sec) { return timeDisplay(Math.max(1, Math.ceil(sec))); };
+            if (gc.earliest > 0) gcText = "likely in " + fmt(gc.likely) + " (between " + fmt(gc.earliest) + " and " + fmt(gc.latest) + ")";
+            else if (gc.latest > 0) gcText = "likely in " + fmt(gc.likely) + " (could appear any moment, at the latest in " + fmt(gc.latest) + ")";
+            else gcText = "any moment now";
+        }
+        line("#ffde5f", "Next golden cookie", gcText);
     }
 
     var buffs = t_d.filter(function (o) { return o.name && / Time$/.test(o.name); });

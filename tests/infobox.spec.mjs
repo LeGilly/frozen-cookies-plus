@@ -24,19 +24,29 @@ test("the infobox explains what happens next and what is being hunted", async ({
   noErrors(errors);
 });
 
-test("the golden cookie line stays readable once the earliest time has passed", async ({ page }) => {
+test("the golden cookie times follow the game's own timer", async ({ page }) => {
   const errors = await loadGame(page);
-  const text = (displays) => page.evaluate((d) => {
-    const t_d = [
-      { name: "GC Maximum (99%)", display: d[2] },
-      { name: "GC Estimate (50%)", display: d[1], overlay: true },
-      { name: "GC Minimum (1%)", display: d[0], overlay: true },
-    ];
-    return FCP.infoLines(t_d).filter((l) => l.label === "Next golden cookie").map((l) => l.value).join("");
-  }, displays);
-  expect(await text(["3m 44s", "4m 59s", "5m 54s"])).toBe("likely in 4m 59s (between 3m 44s and 5m 54s)");
-  expect(await text(["", "31s", "1m 21s"])).toBe("likely in 31s (could appear any moment, at the latest in 1m 21s)");
-  expect(await text(["", "", "12s"])).toBe("any moment now (at the latest in 12s)");
+  const at = (time) => page.evaluate((t) => {
+    const g = Game.shimmerTypes.golden;
+    Game.killShimmers(); g.minTime = 300 * Game.fps; g.maxTime = 900 * Game.fps; g.time = t * Game.fps; g.spawned = 0;
+    const r = FCP.gcTimes();
+    return { ...r, text: FCP.infoLines([]).filter((l) => l.label === "Next golden cookie").map((l) => l.value).join("") };
+  }, time);
+  const start = await at(0);
+  expect([start.earliest, start.latest]).toEqual([300, 900]);
+  expect(start.likely).toBeGreaterThan(300);
+  expect(start.likely).toBeLessThan(900);
+  // The limits tick exactly with the clock.
+  const later = await at(100);
+  expect([later.earliest, later.latest]).toEqual([200, 800]);
+  // Buying an upgrade that speeds golden cookies up doesn't move this one (it applies to the next).
+  await page.evaluate(() => Game.Upgrades["Lucky day"].earn());
+  expect((await at(100)).likely).toBeCloseTo(later.likely, 5);
+  // Past the earliest time, and right before the latest: still shown.
+  expect((await at(400)).text).toMatch(/^likely in .* \(could appear any moment, at the latest in 8m 20s\)$/);
+  expect((await at(899.9)).text).toMatch(/at the latest in 1s\)$/);
+  // A cookie on screen, and the Golden switch.
+  expect(await page.evaluate(() => { Game.shimmerTypes.golden.spawned = 1; return FCP.gcTimes().state; })).toBe("onscreen");
   noErrors(errors);
 });
 
