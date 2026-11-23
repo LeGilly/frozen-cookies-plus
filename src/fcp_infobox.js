@@ -284,6 +284,11 @@ setInterval(function () {
 
 var _fcpOriginalDrawCircles = drawCircles;
 drawCircles = function (t_d, x, y) {
+    // FC draws its "Frenzy: x" text as a jCanvas layer. jCanvas then wipes the whole canvas
+    // and redraws only its layers whenever the mouse leaves the canvas, which happens when
+    // the mouse moves onto the big cookie: one blank frame (no cookie, milk or buff glow).
+    // The game redraws everything each frame anyway, so that handler is not needed.
+    $("#backgroundLeftCanvas").off("mouseout.jCanvas");
     var mode = FrozenCookies.fancyui;
     if (!mode) return FCP.hideInfoPanel();
     var c = $("#backgroundLeftCanvas");

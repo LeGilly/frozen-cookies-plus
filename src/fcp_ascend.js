@@ -157,7 +157,9 @@ FCP.ascendTick = function () {
         FCP.status["Ascension"] =
             (first ? "first one at " + Beautify(target) + " prestige levels" : "when prestige doubles (+" + Beautify(target) + " levels)") +
             " · " + Beautify(Math.max(0, have)) + " so far" +
-            (rate > 0 ? " · about " + timeDisplay(left / rate) : "");
+            // A time only when close: income keeps growing, so a far-off estimate at today's
+            // income (years, early in a run) means nothing.
+            (rate > 0 && left / rate < 6 * 3600 ? " · about " + timeDisplay(left / rate) : "");
         return;
     }
     // Worth it: wait out a combo, pop the wrinklers, then go.

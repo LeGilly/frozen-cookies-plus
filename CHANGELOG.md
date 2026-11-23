@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.1 · 2026-11-23
+- Fixed a one-frame flicker when the mouse moves onto the big cookie: the cookie, milk and buff glow vanished for a frame (FC's "Frenzy" text is a jCanvas layer, and jCanvas cleared the whole canvas when the mouse left it)
+- Infobox: the next ascension only shows a time once it is under 6 hours away (estimates at today's income said years early in a run, though income keeps growing)
+
 ## 1.7.0 · 2026-11-23
 - Smart ascension (new option, on in Recommended): FC+ ascends by itself, the first time at 440 prestige levels (about a day of play in simulation, with prestige per hour still rising at that point), then whenever ascending doubles your prestige. It waits out Frenzies and click buffs and pops the wrinklers first
 - On the ascension screen, FC+ buys the heavenly upgrades before reincarnating: a priority list first (Legacy, Heavenly cookies, the cookie boxes, Season switcher, Kitten angels...), with any upgrades they need, then the rest cheapest first; purely cosmetic ones are skipped. This covers every ascension FC+ makes itself (challenge run exits and the marathon too); yours are left to you

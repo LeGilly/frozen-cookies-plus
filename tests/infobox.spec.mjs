@@ -54,3 +54,18 @@ test("during a Neverclick start, times use the real cookie rate instead of the p
   expect(next).not.toContain("now");
   noErrors(errors);
 });
+
+test("moving onto the big cookie doesn't wipe the left canvas for a frame", async ({ page }) => {
+  const errors = await loadGame(page);
+  await setOptions(page, { fancyui: 1 });
+  await page.waitForTimeout(1500); // FC has drawn its "Frenzy" text layer
+  const r = await page.evaluate(() => {
+    const ctx = Game.LeftBackground, x = Game.cookieOriginX, y = Game.cookieOriginY;
+    const before = ctx.getImageData(x, y, 1, 1).data[3];
+    ctx.canvas.dispatchEvent(new MouseEvent("mouseout", { bubbles: true })); // the mouse goes onto the cookie
+    return [before, ctx.getImageData(x, y, 1, 1).data[3]];
+  });
+  expect(r[0]).toBeGreaterThan(0);
+  expect(r[1]).toBe(r[0]); // the cookie is still drawn
+  noErrors(errors);
+});
