@@ -69,3 +69,16 @@ test("moving onto the big cookie doesn't wipe the left canvas for a frame", asyn
   expect(r[1]).toBe(r[0]); // the cookie is still drawn
   noErrors(errors);
 });
+
+test("a golden cookie popup near the top of the screen stays whole", async ({ page }) => {
+  const errors = await loadGame(page);
+  await page.evaluate(() => Game.Popup("Lucky!<br><small>+71.921 trillion cookies!</small>", 600, 0));
+  await page.waitForTimeout(1500); // the popup has finished rising
+  const top = await page.evaluate(() => {
+    const p = Game.textParticles.filter((x) => x.life >= 0 && /Lucky/.test(x.text)).pop();
+    return [p.l.getBoundingClientRect().top, l("game").getBoundingClientRect().top + Game.bounds.top];
+  });
+  console.log("popup top", JSON.stringify(top));
+  expect(top[0]).toBeGreaterThanOrEqual(top[1]); // not above the top of the game
+  noErrors(errors);
+});

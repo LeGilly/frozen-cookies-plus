@@ -309,3 +309,28 @@ drawCircles = function (t_d, x, y) {
     if (mode % 2 === 1) FCP.renderInfoPanel(t_d, bottom, Math.max(220, Math.min(480, canvasW - 20)));
     else FCP.hideInfoPanel();
 };
+
+// Popups (golden cookie results and the like) are placed at the golden cookie, held at least
+// 32 pixels below the top by the game. A two-line popup is taller than that, and it then rises
+// 32 more pixels, so one near the top was cut off by the window edge. Move it down enough to
+// stay whole.
+if (Game.textParticlesAdd && !Game.textParticlesAdd.__fcp) {
+    (function () {
+        var add = Game.textParticlesAdd;
+        Game.textParticlesAdd = function (text) {
+            var r = add.apply(this, arguments);
+            try {
+                var me = Game.textParticles.filter(function (p) { return p.life === 0 && p.text === text; }).pop();
+                if (me && me.l) {
+                    var minY = Game.bounds.top + (typeof App !== "undefined" && App ? 32 : 0) + me.l.offsetHeight + 32 + 12;
+                    if (me.y < minY) {
+                        me.y = minY;
+                        me.l.style.bottom = Math.floor(-me.y) + "px";
+                    }
+                }
+            } catch (e) {}
+            return r;
+        };
+        Game.textParticlesAdd.__fcp = true;
+    })();
+}

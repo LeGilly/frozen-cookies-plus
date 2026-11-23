@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.2 · 2026-11-23
+- Golden cookie popups ("Lucky! +x cookies") near the top of the screen are moved down so they stay whole; the game kept them only 32 pixels from the top, less than a two-line popup plus its rise
+
 ## 1.7.1 · 2026-11-23
 - Fixed a one-frame flicker when the mouse moves onto the big cookie: the cookie, milk and buff glow vanished for a frame (FC's "Frenzy" text is a jCanvas layer, and jCanvas cleared the whole canvas when the mouse left it)
 - Infobox: the next ascension only shows a time once it is under 6 hours away (estimates at today's income said years early in a run, though income keeps growing)
