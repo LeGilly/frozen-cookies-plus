@@ -82,3 +82,12 @@ test("a golden cookie popup near the top of the screen stays whole", async ({ pa
   expect(top[0]).toBeGreaterThanOrEqual(top[1]); // not above the top of the game
   noErrors(errors);
 });
+
+test("the panel leaves room for Santa and the dragon at the bottom left", async ({ page }) => {
+  const errors = await loadGame(page);
+  await setOptions(page, { fancyui: 1 });
+  await expect.poll(() => page.evaluate(() => l("fcpInfoPanel") ? parseInt(l("fcpInfoPanel").style.left) : -1), { timeout: 5000 }).toBe(10);
+  await page.evaluate(() => Game.Upgrades["A crumbly egg"].earn()); // the dragon egg appears at the bottom left
+  await expect.poll(() => page.evaluate(() => l("fcpInfoPanel") ? parseInt(l("fcpInfoPanel").style.left) : -1), { timeout: 5000 }).toBeGreaterThanOrEqual(80);
+  noErrors(errors);
+});

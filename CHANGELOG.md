@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.7.3 · 2026-11-23
+- The infobox panel moves right when Santa or the dragon is shown at the bottom left, so they are no longer hidden behind it
+
 ## 1.7.2 · 2026-11-23
 - Golden cookie popups ("Lucky! +x cookies") near the top of the screen are moved down so they stay whole; the game kept them only 32 pixels from the top, less than a two-line popup plus its rise
 

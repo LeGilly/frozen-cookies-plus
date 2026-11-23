@@ -252,8 +252,12 @@ FCP.renderInfoPanel = function (t_d, bottomPx, widthPx) {
     if (!el) return;
     FCP.lastPanelDraw = Date.now();
     el.style.display = "block";
+    // Santa and the dragon sit in a column at the bottom left (up to 80px wide when one is
+    // open): start the panel to their right so they stay visible.
+    var left = Game.specialTabs && Game.specialTabs.length ? 88 : 10;
+    el.style.left = left + "px";
     el.style.bottom = bottomPx + "px";
-    el.style.width = widthPx + "px";
+    el.style.width = Math.max(220, widthPx - (left - 10)) + "px";
     // Rebuilding the HTML every frame is wasteful; twice a second is plenty.
     if (FCP.lastPanelHtmlAt && Date.now() - FCP.lastPanelHtmlAt < 500) return;
     FCP.lastPanelHtmlAt = Date.now();
