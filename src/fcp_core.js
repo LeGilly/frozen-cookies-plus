@@ -99,6 +99,11 @@ FCP.preferenceValues = {
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
         default: 0,
     },
+    smartAscend: {
+        hint: "Smart ascension: first ascension at 440 prestige levels, then whenever ascending doubles your prestige; waits out Frenzies and click buffs and pops the wrinklers first. On the ascension screen FC+ buys the heavenly upgrades (most useful first) before reincarnating, for every ascension it makes itself. Replaces FC's own Auto Ascend while on (see fcp_ascend.js).",
+        display: ["Smart ascension OFF", "Smart ascension ON"],
+        default: 0,
+    },
     bankRules: {
         hint: "Bank rules: FC's extra upgrades, the Halloween switch and reward cookie buildings wait for the golden cookie bank; the Golden switch and the Godzamok combo only fire when the extra clicking (at your measured click speed) beats their cost; the Easter switch during a Cookie Storm only while cheap (see fcp_bankrules.js).",
         display: ["Bank rules OFF", "Bank rules ON"],
@@ -245,6 +250,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.autoStocks = 1;
         FrozenCookies.smartBulk = 1;
         FrozenCookies.bankRules = 1;
+        FrozenCookies.smartAscend = 1;
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;

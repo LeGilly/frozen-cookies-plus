@@ -16,6 +16,7 @@
 | `src/fcp_core.js` | Plus: new options in the FC menu, scheduler (wraps `FCStart`), helpers, achievement tracker in the menu |
 | `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
 | `src/fcp_bankrules.js` | Bank rules: wraps `autoGSBuy`, `autoGodzamokAction`, `autoEasterAction`, `autoHalloweenAction`, `buyOtherUpgrades` (with `Game.Upgrade.prototype.buy`) and `isRewardCookie`. Loaded before fcp_bankwatch.js so the bank watcher sees the wrapped versions |
+| `src/fcp_ascend.js` | Smart ascension: when to ascend, `FCP.autoAscend(why)` (every ascension FC+ makes goes through it), the heavenly upgrade buyer (`FCP.heavenlyPriority`, wraps `Game.Reincarnate`), and the autoCookie wrapper that sets FC's own auto-ascend aside |
 | `src/fcp_bankwatch.js` | Why the golden cookie bank is below full. Wraps `Game.Spend`, `Game.Upgrade.prototype.buy`, each building's `buy`, `Game.storeBuyAll`, `Game.UpgradeSanta`, `Game.UpgradeDragon`, `autoCookie` and FC's actions that skip the bank (`autoGSBuy`, `buyOtherUpgrades`, season, dragon, bank office, Godzamok, reward cookies) to note what was bought and by whom. `FCP.addTask` files a task's spending under "FC+ (name)" |
 | `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
@@ -70,6 +71,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 
 - `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks, the menu tracker and saving.
 - `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
+- `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount.
 - `bankrules.spec.mjs`: the Golden switch and Godzamok worth checks, extra upgrades waiting for the bank, reward cookies.
 - `bankwatch.spec.mjs`: each reason the bank is below full.
 - `shadow.spec.mjs`: every UI trick, shadow achievement, the gift, the marathon and the cheats, and that each puts the game back as it was.
@@ -107,6 +109,11 @@ Results so far (2026-11-22):
 | `recalc`: FC's formula, recalculated every 5 s | 0% everywhere | 0% | No (no effect) |
 | `achiev`: count achievements a purchase earns | 0 / 0 / −0.7% / −1.4% | noise | No |
 | `bundle`: achiev + "buy to the next building achievement" | 0 / 0 / −0.5% / −0.5% | not run | No |
+
+First ascension timing (1.7.0): `node tools/benchmark.mjs --variants=shipped --seeds=1 --scenarios=fresh --hours=24 --every=3600 --clicks=40`
+(about 20 minutes). Prestige levels on a new save: 27 at 12 h, 192 at 20 h, 422 at 24 h; levels per hour were
+still rising (9.6/h at 20 h, 17.6/h at 24 h), so ascending earlier earns fewer levels per hour of play.
+Hence `FCP.FIRST_ASCEND_LEVELS = 440`.
 
 ## Updating
 

@@ -270,6 +270,7 @@ FCP.patchReincarnate = function () {
         return original.apply(this, arguments);
     };
     patched.__fcp = true;
+    patched.__fcpHeavenly = original.__fcpHeavenly; // keep the heavenly upgrade wrapper recognised
     Game.Reincarnate = patched;
 };
 
@@ -328,7 +329,7 @@ FCP.challengeTick = function () {
         FCP.challengeExit = true;
         FCP.challengeFlag(false);
         FCP.log("Challenge run finished, ascending back to a normal run.", true);
-        Game.Ascend(1);
+        if (FCP.autoAscend) FCP.autoAscend("challenge"); else Game.Ascend(1);
     }
 };
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.7.0 · 2026-11-23
+- Smart ascension (new option, on in Recommended): FC+ ascends by itself, the first time at 440 prestige levels (about a day of play in simulation, with prestige per hour still rising at that point), then whenever ascending doubles your prestige. It waits out Frenzies and click buffs and pops the wrinklers first
+- On the ascension screen, FC+ buys the heavenly upgrades before reincarnating: a priority list first (Legacy, Heavenly cookies, the cookie boxes, Season switcher, Kitten angels...), with any upgrades they need, then the rest cheapest first; purely cosmetic ones are skipped. This covers every ascension FC+ makes itself (challenge run exits and the marathon too); yours are left to you
+- The infobox shows when the next ascension is due
+- With smart ascension off, FC's own "prestige doubled" auto-ascend now works with default settings (it needed a heavenly chips amount above 0, and the default "block during a x1 Frenzy" blocked it at all times)
+- Benchmark: `--every=N` adds a checkpoint every N game seconds
+
 ## 1.6.0 · 2026-11-23
 - Infobox: when the golden cookie bank is below full, a "Why not full" line says why: a purchase raised the income so the bank to aim for grew, FC kept a smaller bank to buy something sooner, something was bought by an FC action that doesn't wait for the bank (named), you bought something, or cookies were lost to a wrath cookie or a spell backfire
 - Bank rules (new option, on in Recommended) for FC's purchases that didn't wait for the bank:

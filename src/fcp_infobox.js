@@ -148,6 +148,8 @@ FCP.infoLines = function (t_d) {
         if (why) line("#9e9e9e", "Why not full", why);
     }
 
+    if (FrozenCookies.smartAscend && FCP.status["Ascension"]) line("#b39ddb", "Next ascension", FCP.status["Ascension"]);
+
     if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {
         var clickText;
         if (FCP.noClickActive && FCP.noClickActive()) clickText = "paused for the Neverclick challenge";

@@ -25,9 +25,15 @@ const SCENARIO = {
   // A brand new save: 0 prestige, 100 cookies to get going.
   fresh: { seconds: Number(args.hours || 4) * 3600, checkpoints: [1800, 3600, 7200, 14400] },
   // Right after an ascension with 10,000 prestige levels and every heavenly upgrade up to 1e6 chips.
+  // A Born Again run with clicking at --clicks per second; reports when 1M cookies were reached.
+  bornagain: { seconds: Number(args.hours || 0.5) * 3600, checkpoints: [300, 600, 900, 1500, 1800] },
   ascended: { seconds: Number(args.hours || 2) * 3600, checkpoints: [600, 1800, 3600, 7200] },
 };
 
+// --every=N adds a checkpoint every N game seconds (to follow a whole run, e.g. for ascension timing).
+if (args.every) for (const k in SCENARIO) for (let t = Number(args.every); t <= SCENARIO[k].seconds; t += Number(args.every))
+  if (!SCENARIO[k].checkpoints.includes(t)) SCENARIO[k].checkpoints.push(t);
+for (const k in SCENARIO) SCENARIO[k].checkpoints.sort((a, b) => a - b);
 for (const k in SCENARIO) SCENARIO[k].checkpoints = SCENARIO[k].checkpoints.filter((t) => t <= SCENARIO[k].seconds);
 if (args.hours) for (const k in SCENARIO) if (!SCENARIO[k].checkpoints.includes(SCENARIO[k].seconds)) SCENARIO[k].checkpoints.push(SCENARIO[k].seconds);
 
@@ -46,7 +52,7 @@ async function runOne(scenario, variant, seed) {
   await page.waitForFunction(() => window.FCP && Game.mods["frozen_cookies_plus"], null, { timeout: 60_000 });
   await page.addScriptTag({ content: readFileSync(new URL("./bench-driver.js", import.meta.url), "utf8") });
   const t0 = Date.now();
-  const result = await page.evaluate((o) => FCB.run(o), { scenario, variant, seed, ...SCENARIO[scenario] });
+  const result = await page.evaluate((o) => FCB.run(o), { scenario, variant, seed, clicks: Number(args.clicks || 0), ...SCENARIO[scenario] });
   result.wall = ((Date.now() - t0) / 1000).toFixed(0) + "s";
   await page.close();
   return result;
@@ -64,7 +70,7 @@ try {
         table[variant].push(r);
         console.log(`${variant.padEnd(10)} seed ${s}: ` +
           r.checkpoints.map((c) => `${c.t / 60}m ${fmt(c.baked)}`).join(" | ") +
-          `  cps ${fmt(r.cps)}  achievs ${r.achievements}  (${r.wall})`);
+          `  cps ${fmt(r.cps)}  achievs ${r.achievements}` + (r.reached ? `  1M at ${(r.reached / 60).toFixed(1)} min` : "") + `  (${r.wall})`);
       }
     }
     // Geometric mean of cookies baked at each checkpoint, relative to the first variant.
