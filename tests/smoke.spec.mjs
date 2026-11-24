@@ -59,6 +59,22 @@ test("the FC menu shows the achievement tracker and the Plus options, and they a
   // "Recommended" is the first option, before the long list.
   expect(await page.evaluate(() => Object.keys(FrozenCookies.preferenceValues)[0])).toBe("recommendedSettings");
   const menu = await page.locator("#menu").innerText();
-  expect(menu.indexOf("Recommended OFF")).toBeLessThan(menu.indexOf("Autoclick OFF"));
+  expect(menu).not.toContain("Recommended OFF"); // a button now, not an on/off option
+  expect(menu.indexOf("Apply recommended options")).toBeGreaterThan(-1);
+  expect(menu.indexOf("Apply recommended options")).toBeLessThan(menu.indexOf("Autoclick OFF"));
+  noErrors(errors);
+});
+
+test("the Recommended button applies FC and FC+ recommended options, then the game reloads", async ({ page }) => {
+  const errors = await loadGame(page);
+  await setOptions(page, { burstBuy: 0, smartAscend: 0 });
+  await page.evaluate(() => {
+    // Catch the reload request instead of letting the page reload under the test.
+    Object.defineProperty(Game, "toReload", { configurable: true, get: () => false, set: (v) => { window._reload = v; } });
+    Game.ShowMenu("fc_menu");
+  });
+  await page.locator("#fcpRecommendedButton").click();
+  expect(await page.evaluate(() => [FrozenCookies.burstBuy, FrozenCookies.smartAscend, FrozenCookies.autoBuy, FrozenCookies.recommendedSettings, window._reload]))
+    .toEqual([1, 1, 1, 0, true]);
   noErrors(errors);
 });

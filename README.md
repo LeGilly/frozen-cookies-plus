@@ -11,7 +11,7 @@ Download `FrozenCookiesPlus-<version>.zip` from this repository's **Releases** p
    (In Steam: right-click Cookie Clicker → Manage → Browse local files, then `resources\app\mods\local`.)
 2. Disable or remove any other Frozen Cookies mod, since two automation mods conflict.
 3. Start the game. Under **Options → Manage mods**, check that *Frozen Cookies Plus* is enabled, then restart if the game asks.
-4. Open the **Frozen Cookies** button (top right, where *Info* used to be) and press **Recommended ON**. It sets every option, including the Plus ones, and reloads the game.
+4. Open the **Frozen Cookies** button (top right, where *Info* used to be) and press **Apply recommended options** at the top. It sets every option, including the Plus ones, and reloads the game.
 
 Everything is bundled in one `main.js` (libraries included), so the mod works offline and never downloads code.
 
@@ -36,6 +36,8 @@ Everything is bundled in one `main.js` (libraries included), so the mod works of
 | Smart bulk buy | With the store on x10/x100, buys only as many of a building as fit above the golden cookie bank and are still better value than any other purchase. Early in a run that is still 100 at a time; later it stops emptying the bank. |
 | First-run scoring | Before your first ascension, rates purchases by Cookie Monster's payback period (only the cookies you are still missing count towards the wait), which gets a new save going faster. After an ascension FC's usual rating is kept. |
 | Research chain scoring | The Bingo center and each research upgrade are valued together with the next research they unlock, so research starts early instead of waiting until the Bingo center's own small effect is worth it. |
+| Dragon training timing | Trains the dragon only when buying back the buildings it takes costs under 10 minutes of income (levels that cost cookies wait for the golden cookie bank). The infobox shows the next level and what it waits for. |
+| Burst buying | When a windfall covers the next purchase many times over, buys several things per round and buildings by the dozen, with one recalculation. Slightly less exact, much faster. |
 | Smart dragon auras | The dragon always wears the best auras it knows (Breath of Milk, Dragon Cursor, Elder Battalion, Dragon God, Radiant Appetite, Reality Bending), worked out from your production and clicking. Switches only for at least 1% more, since each switch costs one of your most expensive buildings. Replaces FC's fixed auras while on. |
 | Smart ascension | Ascends by itself: the first time at 440 prestige levels, then whenever ascending doubles your prestige. Waits out Frenzies and click buffs and pops the wrinklers first. On the ascension screen it buys the heavenly upgrades, most useful first (with any upgrades they need), before reincarnating. Your own ascensions are left to you. FC's own Auto Ascend is set aside while this is on. |
 | Bank rules | FC's purchases that used to skip the golden cookie bank: extra upgrades, the Halloween switch and reward cookie buildings now wait for it; the Golden switch and the Godzamok combo only fire when the extra clicking (at your measured speed) beats their cost; the Easter switch during a Cookie Storm only while cheap. |

@@ -127,3 +127,68 @@ FCP.dragonTick = function () {
 });
 
 FCP.addTask("dragon", function () { return true; }, FCP.dragonTick, 5000);
+
+// ---------------------------------------------------------------------------
+// Dragon training (option dragonTiming, on in Recommended).
+// FC trains the dragon as soon as it can: most levels take 100 of one building (the last two,
+// 50 and then 200 of every building), which FC then buys back. Late in a run that can be hours
+// of income. With this on, a level that takes buildings waits until buying them back costs at
+// most FCP.DRAGON_REBUY_MINUTES of income; levels that cost cookies wait for the golden cookie
+// bank. The infobox shows the next level and what it waits for.
+// ---------------------------------------------------------------------------
+FCP.DRAGON_REBUY_MINUTES = 10;
+
+// The cookies to buy back `n` units of a building just sacrificed (the n before the next one).
+FCP.rebuyCost = function (o, n) {
+    if (o.amount < n) return Infinity;
+    return (o.getPrice() * (1 - Math.pow(1.15, -n))) / 0.15;
+};
+
+FCP.dragonNext = function () {
+    if (!Game.Has("A crumbly egg") || Game.dragonLevel >= Game.dragonLevels.length - 1) return null;
+    var lvl = Game.dragonLevel,
+        it = Game.dragonLevels[lvl],
+        name = String(it.action || "").replace(/<br>.*$/i, "").replace(/<[^>]+>/g, ""),
+        income = Math.max(1, FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs) * 60 * FCP.DRAGON_REBUY_MINUTES;
+    var cost = String(it.costStr ? it.costStr() : "").replace(/<[^>]+>/g, "");
+    var r = { name: name, cost: cost, ready: !!it.cost(), worth: true, why: "" };
+    if (lvl >= 5 && lvl < Game.dragonLevels.length - 3) {
+        var o = Game.ObjectsById[lvl - 5];
+        if (o.amount < 100) r.why = "when you own 100 (have " + o.amount + ")";
+        else {
+            var rebuy = FCP.rebuyCost(o, 100);
+            r.worth = rebuy <= income;
+            if (!r.worth) r.why = "waiting until buying them back costs under " + FCP.DRAGON_REBUY_MINUTES + " minutes of income (now " + timeDisplay(rebuy / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + ")";
+        }
+    } else if (lvl >= Game.dragonLevels.length - 3) {
+        var per = lvl === Game.dragonLevels.length - 3 ? 50 : 200, total = 0, short = null;
+        Game.ObjectsById.forEach(function (b) {
+            if (b.amount < per && !short) short = b;
+            total += FCP.rebuyCost(b, per);
+        });
+        if (short) r.why = "when you own " + per + " of every building (" + short.name + ": " + short.amount + ")";
+        else {
+            r.worth = total <= income;
+            if (!r.worth) r.why = "waiting until buying them back costs under " + FCP.DRAGON_REBUY_MINUTES + " minutes of income (now " + timeDisplay(total / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + ")";
+        }
+    } else {
+        var price = Math.pow(2, lvl) * 1e6;
+        r.worth = FCP.canSpend ? FCP.canSpend(price) : true;
+        if (!r.ready) r.why = "when you have " + Beautify(price) + " cookies";
+        else if (!r.worth) r.why = "waiting for cookies above the golden cookie bank";
+    }
+    return r;
+};
+
+(function () {
+    var fn = window.autoDragonAction;
+    if (typeof fn !== "function" || fn.__fcpTiming) return;
+    window.autoDragonAction = function () {
+        if (FrozenCookies.dragonTiming) {
+            var next = FCP.dragonNext();
+            if (next && !next.worth) return;
+        }
+        return fn.apply(this, arguments);
+    };
+    window.autoDragonAction.__fcpTiming = true;
+})();

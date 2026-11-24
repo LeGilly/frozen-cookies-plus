@@ -11,6 +11,32 @@
 // Godzamok's sell-and-rebuy is left alone (it doesn't go through autoCookie).
 // The option itself (smartBulk) is declared in fcp_core.js.
 
+// Burst buying (option burstBuy): a burst is when the cookies above the bank cover the next
+// purchase many times over. FC buys one thing per round and recalculates every option after each,
+// so a big windfall took hundreds of slow rounds. During a burst:
+//  - buildings: more units per purchase, while each stays within FCP.BURST_TOLERANCE of the best
+//    other purchase's score (about 5 more units than an exact comparison would allow);
+//  - after FC's own purchase, up to FCP.BURST_EXTRA more purchases from the same ranking, before
+//    the one recalculation. The ranking is a few purchases old by then: slightly less exact.
+FCP.BURST_FACTOR = 10;
+FCP.BURST_TOLERANCE = 2;
+FCP.BURST_EXTRA = 10;
+FCP.burstSkip = ["Chocolate egg", "One mind", "Communal brainsweep", "Elder Pact", "Elder Pledge", "Elder Covenant",
+    "Revoke Elder Covenant", "Sugar frenzy", "Golden switch [off]", "Golden switch [on]"];
+
+FCP.spareCookies = function () {
+    var bank = 0;
+    try { bank = delayAmount() || 0; } catch (e) {}
+    return Game.cookies - bank;
+};
+
+FCP.burstActive = function () {
+    if (!FrozenCookies.burstBuy || !FrozenCookies.autoBuy) return false;
+    var next = null;
+    try { next = nextPurchase(); } catch (e) {}
+    return !!(next && next.cost > 0 && FCP.spareCookies() >= FCP.BURST_FACTOR * next.cost);
+};
+
 // How many of `bldg` to buy, at most `count`.
 FCP.smartBulkCount = function (bldg, count) {
     if (count <= 1) return count;
@@ -36,13 +62,14 @@ FCP.smartBulkCount = function (bldg, count) {
         }
     }
 
+    var tolerance = FCP.burstActive() ? FCP.BURST_TOLERANCE : 1;
     var price = bldg.getPrice();
     var n = 1,
         spent = price;
     while (n < count) {
         var next = price * Math.pow(1.15, n);
         if (spent + next > spare) break;
-        if (mine && isFinite(alternative) && mine.efficiency * Math.pow(1.15, n) > alternative) break;
+        if (mine && isFinite(alternative) && mine.efficiency * Math.pow(1.15, n) > alternative * tolerance) break;
         spent += next;
         n++;
     }
@@ -51,11 +78,44 @@ FCP.smartBulkCount = function (bldg, count) {
 
 FCP.inAutoCookie = false;
 
+// More purchases from the ranking FC just used, before it recalculates.
+FCP.burstExtra = function () {
+    if (!FCP.burstActive()) return 0;
+    var list = [];
+    try { list = recommendationList() || []; } catch (e) { return 0; }
+    var bought = 0;
+    for (var i = 0; i < list.length && bought < FCP.BURST_EXTRA; i++) {
+        var r = list[i];
+        if (!r || !r.purchase || !isFinite(r.efficiency)) continue;
+        var spare = FCP.spareCookies();
+        if (r.type === "building") {
+            var b = r.purchase;
+            if (b.getPrice() > spare) continue;
+            var n = FCP.smartBulkCount(b, 100);
+            var before = b.amount;
+            _fcpOriginalSafeBuy.call(window, b, n);
+            if (b.amount > before) bought++;
+        } else if (r.type === "upgrade") {
+            var u = r.purchase;
+            if (u.bought || !u.unlocked || u.pool === "toggle" || FCP.burstSkip.indexOf(u.name) !== -1) continue;
+            if (u.getPrice() > spare) continue;
+            if (u.buy(1)) bought++;
+        }
+    }
+    if (bought) {
+        FrozenCookies.recalculateCaches = true;
+        FCP.burstCount = (FCP.burstCount || 0) + bought;
+    }
+    return bought;
+};
+
 var _fcpOriginalAutoCookie = autoCookie;
 autoCookie = function () {
     FCP.inAutoCookie = true;
     try {
-        return _fcpOriginalAutoCookie.apply(this, arguments);
+        var r = _fcpOriginalAutoCookie.apply(this, arguments);
+        try { FCP.burstExtra(); } catch (e) { console.error("[FC+] burst buying failed:", e); }
+        return r;
     } finally {
         FCP.inAutoCookie = false;
     }

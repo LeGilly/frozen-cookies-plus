@@ -28,6 +28,9 @@ const SCENARIO = {
   // A Born Again run with clicking at --clicks per second; reports when 1M cookies were reached.
   bornagain: { seconds: Number(args.hours || 0.5) * 3600, checkpoints: [300, 600, 900, 1500, 1800] },
   ascended: { seconds: Number(args.hours || 2) * 3600, checkpoints: [600, 1800, 3600, 7200] },
+  // Late game with the minigames, a trained dragon and FC's timed actions (spells, Pantheon,
+  // Godzamok, Golden switch...) run in virtual time. Variants: recommended, doublecast, consistency.
+  lategame: { seconds: Number(args.hours || 1) * 3600, checkpoints: [600, 1800, 3600], timers: true, minigames: true },
 };
 
 // --every=N adds a checkpoint every N game seconds (to follow a whole run, e.g. for ascension timing).
@@ -50,9 +53,18 @@ async function runOne(scenario, variant, seed) {
   await page.evaluate(() => Game.ClosePrompt && Game.ClosePrompt());
   await page.addScriptTag({ content: bundle });
   await page.waitForFunction(() => window.FCP && Game.mods["frozen_cookies_plus"], null, { timeout: 60_000 });
+  if (SCENARIO[scenario].minigames) {
+    // Minigame scripts load asynchronously: give the levels and wait before the run stops time.
+    await page.evaluate(() => {
+      ["Farm", "Bank", "Temple"].forEach((n) => { if (!Game.Objects[n].level) Game.Objects[n].level = 1; });
+      Game.Objects["Wizard tower"].level = 10;
+      Game.LoadMinigames();
+    });
+    await page.waitForFunction(() => ["Farm", "Bank", "Temple", "Wizard tower"].every((n) => Game.Objects[n].minigameLoaded), null, { timeout: 60_000 });
+  }
   await page.addScriptTag({ content: readFileSync(new URL("./bench-driver.js", import.meta.url), "utf8") });
   const t0 = Date.now();
-  const result = await page.evaluate((o) => FCB.run(o), { scenario, variant, seed, clicks: Number(args.clicks || 0), ...SCENARIO[scenario] });
+  const result = await page.evaluate((o) => FCB.run(o), { scenario, variant, seed, clicks: Number(args.clicks || 0), wallLimit: Number(args.walllimit || 0) * 1000, ...SCENARIO[scenario] });
   result.wall = ((Date.now() - t0) / 1000).toFixed(0) + "s";
   await page.close();
   return result;
@@ -70,7 +82,7 @@ try {
         table[variant].push(r);
         console.log(`${variant.padEnd(10)} seed ${s}: ` +
           r.checkpoints.map((c) => `${c.t / 60}m ${fmt(c.baked)}`).join(" | ") +
-          `  cps ${fmt(r.cps)}  achievs ${r.achievements}` + (r.reached ? `  1M at ${(r.reached / 60).toFixed(1)} min` : "") + `  (${r.wall})`);
+          `  cps ${fmt(r.cps)}  achievs ${r.achievements}` + (r.spells !== undefined ? `  spells ${r.spells}  combos ${r.combos}s  magic ${r.magic}  timers ${r.timers}  gods ${r.gods}  cast ${r.casting}\n    buildings ${r.buildings}\n    profile ${r.prof}\n    golden cookies ${r.gc}, buffs seen ${r.buffsSeen}\n    stopped at ${r.stoppedAt}s game time, slow frames ${r.slow}` : "") + (r.reached ? `  1M at ${(r.reached / 60).toFixed(1)} min` : "") + `  (${r.wall})`);
       }
     }
     // Geometric mean of cookies baked at each checkpoint, relative to the first variant.

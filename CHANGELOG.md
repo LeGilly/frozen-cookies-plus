@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.0 · 2026-11-24
+- Sugar lumps: the plan is the same whatever a run has bought so far. When the next building in the plan isn't owned yet (a building can only be levelled once you own one), the lumps wait for it instead of going to Farm level 2 and the plan switching back. Level targets now go from the costliest building down, cursors last; extra levels by production per lump wait until you own every building
+- Dragon training timing (new option, on in Recommended): a level that takes 100 of a building (or 50/200 of every building) waits until buying them back costs under 10 minutes of income; levels that cost cookies wait for the golden cookie bank. FC trained as soon as it could
+- Recommended is now a button ("Apply recommended options") instead of an on/off option, which restarted the game and then always showed OFF
+- Infobox: a "Dragon" line shows the next training, its cost and what it waits for
+- Burst buying (new option, on in Recommended): when far more cookies than the next purchase come in at once, FC+ buys up to 10 more things per round from the same ranking and buildings several at a time (each within 2x the best other purchase's score), with one recalculation. In a test windfall of a month's income, 10 seconds bought 325 things and doubled production instead of 64 things
+
 ## 1.9.0 · 2026-11-24
 - Research chain scoring (new option, on in Recommended): the Bingo center and each research upgrade are scored together with the next research they unlock (both prices against both gains, plus the 30-minute research wait, 3 with Persistent memory), instead of only their own effect. FC rated the Bingo center on making grandmas 4x as efficient, a tiny gain late in a run, so it sat near the bottom even at a few seconds of income. In a test save it moved from 150th to 42nd of 367 purchases. FC's own score is kept when it is better; Elder Pact is left out
 

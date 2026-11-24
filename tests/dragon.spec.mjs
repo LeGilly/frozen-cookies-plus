@@ -56,3 +56,20 @@ test("training the dragon with its menu closed leaves it closed; with it open, o
   expect(await open()).toBe(true);
   noErrors(errors);
 });
+
+test("dragon training waits until the buildings it takes are cheap to buy back, and the infobox says so", async ({ page }) => {
+  const errors = await loadGame(page);
+  await dragon(page, 5); // next: Train Dragon Cursor, takes 100 cursors
+  await setOptions(page, { autoBuy: 0, smartAuras: 0, autoDragon: 0, dragonTiming: 1 });
+  const keep = await page.evaluate(() => { window._rate = FCP.cookieRate; FCP.cookieRate = () => 1; return Game.Objects.Cursor.amount; });
+  const next = await page.evaluate(() => FCP.dragonNext());
+  expect(next.name).toBe("Train Dragon Cursor");
+  expect(next.worth).toBe(false);
+  expect(next.why).toMatch(/^waiting until buying them back costs under 10 minutes of income/);
+  await page.evaluate(() => autoDragonAction());
+  expect(await page.evaluate(() => [Game.dragonLevel, Game.Objects.Cursor.amount])).toEqual([5, keep]);
+  // With a real income, 100 cursors are nothing: it trains.
+  await page.evaluate(() => { FCP.cookieRate = window._rate; autoDragonAction(); });
+  expect(await page.evaluate(() => [Game.dragonLevel, Game.Objects.Cursor.amount])).toEqual([6, keep - 100]);
+  noErrors(errors);
+});

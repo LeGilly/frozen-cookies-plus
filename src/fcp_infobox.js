@@ -181,6 +181,12 @@ FCP.infoLines = function (t_d) {
 
     if (FrozenCookies.smartAscend && FCP.status["Ascension"]) line("#b39ddb", "Next ascension", FCP.status["Ascension"]);
 
+    if ((FrozenCookies.autoDragon || FrozenCookies.dragonTiming) && FCP.dragonNext) {
+        var dn = null;
+        try { dn = FCP.dragonNext(); } catch (e) {}
+        if (dn) line("#ffb74d", "Dragon", dn.name + " · costs " + dn.cost + (dn.why ? " · " + dn.why : " · now"));
+    }
+
     if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {
         var clickText;
         if (FCP.noClickActive && FCP.noClickActive()) clickText = "paused for the Neverclick challenge";

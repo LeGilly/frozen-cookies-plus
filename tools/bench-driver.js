@@ -83,6 +83,11 @@ window.FCB = (function () {
     }
 
     function scenario(name) {
+        if (name === "bornagain") {
+            // A Born Again run (no heavenly upgrades or prestige) after one ascension.
+            Game.resets = 1;
+            Game.ascensionMode = 1;
+        }
         if (name === "ascended") {
             Game.prestige = 1e4;
             Game.heavenlyChips = 0;
@@ -91,8 +96,22 @@ window.FCB = (function () {
                 if (u.pool === "prestige" && u.basePrice <= 1e6 && !u.bought) u.earn();
             });
         }
+        if (name === "lategame") {
+            // Late game: 10 million prestige, every heavenly upgrade up to 1e9 chips, minigames
+            // (levels set before the run, see FCB.prepareLategame) and a fully trained dragon.
+            Game.prestige = 1e7;
+            Game.cookiesReset = Game.HowManyCookiesReset(Game.prestige);
+            Game.resets = 50;
+            Game.heavenlyChips = 0;
+            Object.keys(Game.Upgrades).forEach(function (k) {
+                var u = Game.Upgrades[k];
+                if (u.pool === "prestige" && u.basePrice <= 1e9 && !u.bought) u.earn();
+            });
+            Game.lumps = 100;
+        }
         // Same clean start for every run: soft reset, timers and shimmers back to zero.
         Game.Reset();
+        if (name === "lategame") midRun();
         Game.killShimmers();
         Game.T = 0;
         for (var b in Game.buffs) Game.buffs[b].time = 0;
@@ -108,6 +127,70 @@ window.FCB = (function () {
         Game.cookiesEarned = Math.max(Game.cookiesEarned, 100);
         Game.recalculateGains = 1;
         Game.CalculateGains();
+    }
+
+    // Mid-run state for the late game: buildings bought as FC would roughly have them (fewer of the
+    // pricier ones), every upgrade they unlock, a trained dragon. Deterministic.
+    function midRun() {
+        Game.ObjectsById.forEach(function (o, i) {
+            var n = Math.max(0, 600 - 25 * i);
+            o.amount += n; o.bought += n; o.highest = Math.max(o.highest, o.amount); Game.BuildingsOwned += n;
+        });
+        Game.cookiesEarned = 1e33;
+        Game.cookies = 0;
+        Game.dragonLevel = Game.dragonLevels.length - 1;
+        Game.dragonAura = Game.dragonAurasBN["Radiant Appetite"].id;
+        Game.dragonAura2 = Game.dragonAurasBN["Breath of Milk"].id;
+        Game.recalculateGains = 1; Game.CalculateGains();
+        // Unlock and earn what the buildings, achievements and milk open up (a few passes).
+        var skip = { "Elder Pact": 1, "Elder Covenant": 1, "Revoke Elder Covenant": 1, "Elder Pledge": 1, "One mind": 1,
+            "Communal brainsweep": 1, "Golden switch [on]": 1, "Golden switch [off]": 1, "Sugar frenzy": 1, "Shimmering veil [on]": 1, "Shimmering veil [off]": 1 };
+        for (var pass = 0; pass < 4; pass++) {
+            Game.Logic();
+            Object.values(Game.UpgradesById).forEach(function (u) {
+                if (u.unlocked && !u.bought && u.pool !== "prestige" && u.pool !== "toggle" && u.pool !== "debug" && !skip[u.name] && u.basePrice < 1e33) u.earn();
+            });
+            Game.recalculateGains = 1; Game.CalculateGains();
+        }
+        // Fewer of each building, so that every one costs at most 2 hours of income: FC keeps buying
+        // during the run, as in a real late-game run (a few passes, as income depends on them).
+        for (var k = 0; k < 4; k++) {
+            var target = Game.cookiesPs * 7200;
+            Game.ObjectsById.forEach(function (o) {
+                var price = o.getPrice();
+                if (price <= target || !o.amount) return;
+                var cut = Math.min(o.amount, Math.ceil(Math.log(price / target) / Math.log(1.15)));
+                o.amount -= cut; o.bought -= cut; Game.BuildingsOwned -= cut;
+            });
+            Game.recalculateGains = 1; Game.CalculateGains();
+        }
+        Game.cookies = Game.cookiesPs * 3600; // an hour of income in the bank
+    }
+
+    // FC's and FC+'s timed actions (spells, Pantheon, Godzamok, Golden switch, dragon, FC+ tasks):
+    // capture what FCStart schedules, then call them in virtual time. The big cookie clicking and
+    // autoCookie are driven by the run loop itself.
+    var timers = [];
+    function captureTimers() {
+        timers = [];
+        var skip = [window.autoCookie, window.fcClickCookie, window.autoFrenzyClick, window.saveStats, window.recommendedSettingsAction];
+        window.setInterval = function (fn, ms) {
+            if (typeof fn === "function" && skip.indexOf(fn) === -1) timers.push({ fn: fn, ms: Math.max(ms || 0, 1000 / Game.fps), next: 0 });
+            return 0;
+        };
+        try { FCStart(); } finally { window.setInterval = noop; }
+    }
+    function runTimers(nowMs) {
+        for (var i = 0; i < timers.length; i++) {
+            var t = timers[i];
+            while (t.next <= nowMs) {
+                t.next += t.ms;
+                var t0 = performance.now();
+                try { t.fn(); } catch (e) {}
+                t.spent = (t.spent || 0) + performance.now() - t0;
+                t.calls = (t.calls || 0) + 1;
+            }
+        }
     }
 
     function configureFC() {
@@ -216,6 +299,11 @@ window.FCB = (function () {
                 return list;
             };
         },
+        // Late game: FC+'s Recommended settings (spells, Pantheon, Godzamok, Golden switch...),
+        // without ascending, the achievement hunting or anything that waits for the player.
+        recommended: function () { lategameSettings(); },
+        doublecast: function () { lategameSettings(); FrozenCookies.autoFTHOFCombo = 1; },
+        consistency: function () { lategameSettings(); FrozenCookies.auto100ConsistencyCombo = 1; },
         // The shipped first-run scoring option (fcp_scoring.js), ticked like the real task.
         shipped: function () {
             FrozenCookies.firstRunScoring = 1;
@@ -245,6 +333,18 @@ window.FCB = (function () {
             };
         },
     };
+
+    function lategameSettings() {
+        var keep = { fpsModifier: FrozenCookies.fpsModifier, frequency: FrozenCookies.frequency };
+        FrozenCookies.recommendedSettings = 1;
+        recommendedSettingsAction();
+        Object.assign(FrozenCookies, keep, {
+            autoAscendToggle: 0, smartAscend: 0, ascensionMarathon: 0, challengeRuns: 0, achievementHunter: 0,
+            achievementTricks: 0, shadowAchievements: 0, cheatAchievement: 0, autoSweet: 0,
+            autoClick: 0, autoFrenzy: 0, recommendedSettings: 0,
+        });
+        if (Game.buyBulk !== 1) document.getElementById("storeBulk1").click();
+    }
 
     var MAX_BUNDLE = 50;
     function addBundles(list) {
@@ -297,20 +397,52 @@ window.FCB = (function () {
             frames = o.seconds * fps,
             out = [],
             next = 0;
+        var clicks = o.clicks || 0; // clicks per second on the big cookie (the game caps it at 50)
+        if (clicks) Object.assign(FrozenCookies, { autoClick: 1, cookieClickSpeed: clicks });
+        if (o.timers) captureTimers();
+        var startOwned = Game.BuildingsOwned + Game.UpgradesOwned;
+        var reached = null, startEarned = o.scenario === "lategame" ? Game.cookiesEarned : 0;
+        var wallStart = performance.now(), stoppedAt = null, slow = [];
         for (var f = 1; f <= frames; f++) {
-            clock += 1000 / fps;
+            if (o.wallLimit && performance.now() - wallStart > o.wallLimit) { stoppedAt = f / fps; break; }
+            var frameT0 = performance.now();
+            var frameStart = clock;
+            for (var c = 0; c < clicks / fps; c++) {
+                clock = frameStart + c * (1000 / clicks) + 1;
+                Game.ClickCookie();
+            }
+            clock = frameStart + 1000 / fps;
             Game.Logic();
+            if (o.timers) runTimers((f * 1000) / fps);
+            if (reached === null && Game.cookiesEarned >= (o.target || 1e6)) reached = (f / fps);
             if (FCB.everyFrame) FCB.everyFrame(f);
+            if (o.timers && f % fps === 0) {
+                // Count the seconds spent in a stacked combo (production x50 or more, or a click buff
+                // on top of a production buff).
+                var mult = 1, click = 1;
+                for (var b in Game.buffs) { mult *= Game.buffs[b].multCpS || 1; click *= Game.buffs[b].multClick || 1; (FCB.buffsSeen = FCB.buffsSeen || {})[b] = 1; }
+                if (mult >= 50 || (mult > 1 && click > 1)) FCB.combos = (FCB.combos || 0) + 1;
+            }
             if (!Game.OnAscend && !Game.AscendTimer) {
                 FrozenCookies.processing = false;
+                var a0 = performance.now();
                 autoCookie();
+                FCB.autoCookieMs = (FCB.autoCookieMs || 0) + performance.now() - a0;
             }
+            var took = performance.now() - frameT0;
+            if (took > 2000 && slow.length < 10) slow.push([Math.round(f / fps), Math.round(took), Object.keys(Game.buffs).join("+")]);
             if (next < o.checkpoints.length && f === o.checkpoints[next] * fps) {
-                out.push({ t: o.checkpoints[next], baked: Game.cookiesEarned });
+                out.push({ t: o.checkpoints[next], baked: Game.cookiesEarned - startEarned });
                 next++;
             }
         }
-        return { checkpoints: out, cps: Game.cookiesPs, achievements: Game.AchievementsOwned };
+        var M = Game.Objects["Wizard tower"].minigame;
+        var prof = timers.map(function (t) { return [(t.fn.name || String(t.fn).slice(0, 40).replace(/\s+/g, " ")), Math.round(t.spent || 0), t.calls || 0]; })
+            .sort(function (a, b) { return b[1] - a[1]; }).slice(0, 8);
+        return { gc: Game.goldenClicksLocal, buffsSeen: FCB.buffsSeen ? Object.keys(FCB.buffsSeen).join("+") : "", stoppedAt: stoppedAt, slow: JSON.stringify(slow), prof: JSON.stringify(prof) + " autoCookie " + Math.round(FCB.autoCookieMs || 0) + "ms, purchases " + (Game.BuildingsOwned + Game.UpgradesOwned - startOwned), buildings: Game.ObjectsById.map(function (o) { return o.amount; }).join(","), timers: timers.length, magic: M ? Math.round(M.magic) + "/" + Math.round(M.magicM) : "", gods: Game.Objects.Temple.minigame ? Game.Objects.Temple.minigame.slot.join() : "",
+            casting: FrozenCookies.autoCasting, gs: FrozenCookies.autoGS, godz: FrozenCookies.autoGodzamok,
+            spells: M ? M.spellsCast : undefined, combos: FCB.combos || 0, checkpoints: out, cps: Game.cookiesPs, achievements: Game.AchievementsOwned, reached: reached,
+            speed: ["Speed baking I", "Speed baking II", "Speed baking III"].map(function (n) { return Game.Achievements[n].won; }) };
     }
 
     var FCB = { run: run, variants: variants };

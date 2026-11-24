@@ -104,6 +104,16 @@ FCP.preferenceValues = {
         display: ["Research chain scoring OFF", "Research chain scoring ON"],
         default: 0,
     },
+    dragonTiming: {
+        hint: "Dragon training timing: a level that takes 100 of a building (or 50/200 of every building) waits until buying them back costs under 10 minutes of income; levels that cost cookies wait for the golden cookie bank. FC trained as soon as it could, whatever the buildings cost (see fcp_dragon.js).",
+        display: ["Dragon training timing OFF", "Dragon training timing ON"],
+        default: 0,
+    },
+    burstBuy: {
+        hint: "Burst buying: when far more cookies than the next purchase come in at once (a big golden cookie, a combo), buy several things per round and buildings by the dozen, with one recalculation, instead of one at a time. Slightly less exact, much faster (see fcp_bulk.js).",
+        display: ["Burst buying OFF", "Burst buying ON"],
+        default: 0,
+    },
     smartAuras: {
         hint: "Smart dragon auras: always the best auras your dragon knows, worked out from your production and clicking (FC's own setting waits for two fixed auras, so a young dragon has none). Switches when a better one is learned or the second slot opens; each switch costs one of your most expensive buildings, as in the game (see fcp_dragon.js).",
         display: ["Smart dragon auras OFF", "Smart dragon auras ON"],
@@ -147,8 +157,34 @@ FCP.preferenceValues = {
         });
         out = first;
     }
+    // A button, not an on/off option: it applies everything once and restarts the game, so as a
+    // toggle it always came back showing OFF. The button is added by FCP.addRecommendedButton.
+    if (out.recommendedSettings) out.recommendedSettings = { hint: "Recommended options" };
     FrozenCookies.preferenceValues = out;
 })();
+
+FCP.applyRecommended = function () {
+    FrozenCookies.recommendedSettings = 1;
+    recommendedSettingsAction(); // applies everything, then the game saves and reloads
+};
+
+FCP.addRecommendedButton = function () {
+    if ($("#fcpRecommendedButton").length) return;
+    var heading = $("#menu .fc-section-heading").filter(function () {
+        return /^\s*Recommended options\s*$/.test($(this).text());
+    }).first();
+    if (!heading.length) return;
+    heading.after(
+        $("<div>").addClass("listing").append(
+            $("<label>").addClass("fc-hint-label").text("Sets every FC and FC+ option to its recommended value, then restarts the game."),
+            $("<button>")
+                .addClass("option fc-multichoice-btn")
+                .attr("id", "fcpRecommendedButton")
+                .text("Apply recommended options")
+                .click(function () { FCP.applyRecommended(); })
+        )
+    );
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -262,6 +298,8 @@ recommendedSettingsAction = function () {
         FrozenCookies.bankRules = 1;
         FrozenCookies.smartAscend = 1;
         FrozenCookies.smartAuras = 1;
+        FrozenCookies.dragonTiming = 1;
+        FrozenCookies.burstBuy = 1;
         FrozenCookies.researchScoring = 1;
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
@@ -286,6 +324,7 @@ FCP.patchMenu = function () {
         var r = fn.apply(this, arguments);
         if (Game.onMenu === "fc_menu") {
             try {
+                FCP.addRecommendedButton();
                 FCP.appendMenu();
             } catch (e) {
                 console.error("[FC+] menu", e);

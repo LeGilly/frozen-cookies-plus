@@ -52,3 +52,14 @@ test("FC's own autobuy at x100 keeps its bank with smart bulk on", async ({ page
   expect(last.cookiesAfter).toBeGreaterThanOrEqual(last.bank * 0.999); // the bank survived the purchase
   noErrors(errors);
 });
+
+test("burst buying: a windfall is spent several purchases at a time, above the bank", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 0, buildings: 200, lumps: 0 });
+  await setOptions(page, { autoBuy: 1, burstBuy: 1, smartBulk: 1 });
+  await page.waitForTimeout(2000);
+  await page.evaluate(() => { FCP.burstCount = 0; Game.cookies += Game.cookiesPs * 86400 * 30; }); // a month of income at once
+  await expect.poll(() => page.evaluate(() => FCP.burstCount), { timeout: 20_000 }).toBeGreaterThan(5);
+  expect(await page.evaluate(() => Game.cookies >= delayAmount() * 0.999)).toBe(true);
+  noErrors(errors);
+});

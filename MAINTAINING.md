@@ -21,7 +21,7 @@
 | `src/fcp_bankwatch.js` | Why the golden cookie bank is below full. Wraps `Game.Spend`, `Game.Upgrade.prototype.buy`, each building's `buy`, `Game.storeBuyAll`, `Game.UpgradeSanta`, `Game.UpgradeDragon`, `autoCookie` and FC's actions that skip the bank (`autoGSBuy`, `buyOtherUpgrades`, season, dragon, bank office, Godzamok, reward cookies) to note what was bought and by whom. `FCP.addTask` files a task's spending under "FC+ (name)" |
 | `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
-| `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`) |
+| `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`). Burst buying: more units and up to 10 extra purchases per autoCookie round when the spare cookies cover the next purchase 10 times |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`). Research chain scoring wraps `upgradeStats`: chain upgrades are scored with the next research (toggled with `upgradeToggle` and put back) |
 | `src/fcp_clicks.js` | Measured click speed (wraps `baseClickingCps`; `FCP.cookieRate` for estimates) |
 | `src/fcp_insight.js` | Store insight: ratings from FC's `recommendationList`, store badges, tooltips (wraps building `tooltip` and `Game.crateTooltip`), income breakdown |
@@ -72,7 +72,8 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 
 - `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks, the menu tracker and saving.
 - `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
-- `dragon.spec.mjs`: the best known aura, the second slot at the top level, no switching back and forth, off leaves auras alone.
+- `lumps.spec.mjs`: the lump plan early in a run (buildings not bought yet) and the target order.
+- `dragon.spec.mjs`: dragon training timing, the best known aura, the second slot at the top level, no switching back and forth, off leaves auras alone.
 - `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount.
 - `bankrules.spec.mjs`: the Golden switch and Godzamok worth checks, extra upgrades waiting for the bank, reward cookies.
 - `bankwatch.spec.mjs`: each reason the bank is below full.
@@ -116,6 +117,12 @@ First ascension timing (1.7.0): `node tools/benchmark.mjs --variants=shipped --s
 (about 20 minutes). Prestige levels on a new save: 27 at 12 h, 192 at 20 h, 422 at 24 h; levels per hour were
 still rising (9.6/h at 20 h, 17.6/h at 24 h), so ascending earlier earns fewer levels per hour of play.
 Hence `FCP.FIRST_ASCEND_LEVELS = 440`.
+
+Late-game scenario (work in progress, 1.10.0): `--scenarios=lategame --variants=recommended,doublecast,consistency --clicks=40`
+starts mid-run with 10 million prestige, the minigames (Wizard towers at level 10), a trained dragon, and runs FC's timed
+actions (spells, Pantheon, Godzamok, Golden switch, FC+ tasks) in virtual time. One game hour takes about 25 s. Not usable
+for results yet: golden cookies come far too rarely (their timers are set in frames before the benchmark lowers the frame
+rate), and some runs hung for over 10 minutes for a reason not found yet. `--walllimit=N` stops a run after N real seconds.
 
 ## Updating
 
