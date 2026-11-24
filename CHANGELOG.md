@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.10.1 · 2026-11-24
+- Infobox: when FC keeps no golden cookie bank (usually early in a run), the bank line says so and compares the two scores FC uses: how fast a Lucky! bank would pay for itself, against the next purchase. FC starts the bank once the bank's score is lower
+
 ## 1.10.0 · 2026-11-24
 - Sugar lumps: the plan is the same whatever a run has bought so far. When the next building in the plan isn't owned yet (a building can only be levelled once you own one), the lumps wait for it instead of going to Farm level 2 and the plan switching back. Level targets now go from the costliest building down, cursors last; extra levels by production per lump wait until you own every building
 - Dragon training timing (new option, on in Recommended): a level that takes 100 of a building (or 50/200 of every building) waits until buying them back costs under 10 minutes of income; levels that cost cookies wait for the golden cookie bank. FC trained as soon as it could

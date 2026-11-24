@@ -101,3 +101,18 @@ test("the panel leaves room for Santa and the dragon at the bottom left", async 
   await expect.poll(() => page.evaluate(() => l("fcpInfoPanel") ? parseInt(l("fcpInfoPanel").style.left) : -1), { timeout: 5000 }).toBeGreaterThanOrEqual(80);
   noErrors(errors);
 });
+
+test("with no golden cookie bank kept, the panel says why and how far it is", async ({ page }) => {
+  const errors = await loadGame(page);
+  // A new run: cheap purchases pay back fast, so FC keeps no bank.
+  await page.evaluate(() => { Game.Earn(1e7); Game.Objects.Cursor.buy(10); Game.Objects.Grandma.buy(5); });
+  await setOptions(page, { autoBuy: 0, fancyui: 1 });
+  const text = await page.evaluate(() => {
+    Game.cookies = luckyBank() * 0.3; // below a Lucky! bank (above it, a bank is "kept" for free)
+    FrozenCookies.recalculateCaches = true; nextPurchase(true);
+    if (delayAmount() !== 0) return "bank kept: " + delayAmount();
+    return FCP.infoLines([]).filter((l) => l.label === "Golden cookie bank").map((l) => l.value).join("");
+  });
+  expect(text).toMatch(/^none for now · a Lucky! bank \(.+\) would pay for itself in .+, .+ in .+ · FC starts saving once the bank wins$/);
+  noErrors(errors);
+});

@@ -119,6 +119,23 @@ FCP.gcTimes = function () {
     };
 };
 
+FCP.noBankInfo = function () {
+    try {
+        var lucky = luckyBank();
+        if (!(lucky > 0)) return "";
+        var bankScore = cookieEfficiency(Game.cookies, lucky);
+        var next = nextChainedPurchase();
+        if (!next || !isFinite(next.efficiency)) return "";
+        var fmt = function (sec) { return timeDisplay(Math.max(1, Math.round(sec))); };
+        if (!(bankScore < Number.MAX_VALUE / 2)) return "none · golden cookies don't count right now";
+        var name = next.purchase && (next.purchase.dname || next.purchase.name);
+        return "none for now · a Lucky! bank (" + Beautify(lucky) + ") would pay for itself in " + fmt(bankScore) +
+            ", " + name + " in " + fmt(next.efficiency) + " · FC starts saving once the bank wins";
+    } catch (e) {
+        return "";
+    }
+};
+
 FCP.infoLines = function (t_d) {
     var lines = [];
     var head = function (text) { lines.push({ head: true, label: text }); };
@@ -177,6 +194,12 @@ FCP.infoLines = function (t_d) {
         );
         var why = pct < 1 && FCP.bankWatch && FCP.bankWatch.why;
         if (why) line("#9e9e9e", "Why not full", why);
+    } else {
+        // No bank kept: say why, and how far it is from starting. FC keeps a bank once filling it
+        // scores better (cookies still needed / extra golden cookie income) than the next purchase
+        // (time to afford + time to pay for itself).
+        var nb = FCP.noBankInfo();
+        if (nb) line("#fcd400", "Golden cookie bank", nb);
     }
 
     if (FrozenCookies.smartAscend && FCP.status["Ascension"]) line("#b39ddb", "Next ascension", FCP.status["Ascension"]);
