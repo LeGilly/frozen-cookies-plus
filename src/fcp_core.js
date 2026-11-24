@@ -99,6 +99,11 @@ FCP.preferenceValues = {
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
         default: 0,
     },
+    researchScoring: {
+        hint: "Research chain scoring: the Bingo center and each research upgrade are valued with the upgrades they lead to (+15% production in all, and grandma boosts), not only their own small effect, so research starts early (see fcp_scoring.js).",
+        display: ["Research chain scoring OFF", "Research chain scoring ON"],
+        default: 0,
+    },
     smartAuras: {
         hint: "Smart dragon auras: always the best auras your dragon knows, worked out from your production and clicking (FC's own setting waits for two fixed auras, so a young dragon has none). Switches when a better one is learned or the second slot opens; each switch costs one of your most expensive buildings, as in the game (see fcp_dragon.js).",
         display: ["Smart dragon auras OFF", "Smart dragon auras ON"],
@@ -257,6 +262,7 @@ recommendedSettingsAction = function () {
         FrozenCookies.bankRules = 1;
         FrozenCookies.smartAscend = 1;
         FrozenCookies.smartAuras = 1;
+        FrozenCookies.researchScoring = 1;
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.9.0 · 2026-11-24
+- Research chain scoring (new option, on in Recommended): the Bingo center and each research upgrade are scored together with the next research they unlock (both prices against both gains, plus the 30-minute research wait, 3 with Persistent memory), instead of only their own effect. FC rated the Bingo center on making grandmas 4x as efficient, a tiny gain late in a run, so it sat near the bottom even at a few seconds of income. In a test save it moved from 150th to 42nd of 367 purchases. FC's own score is kept when it is better; Elder Pact is left out
+
 ## 1.8.2 · 2026-11-23
 - Smart dragon auras switch auras directly (same cost as the game's button: one of your most expensive buildings) instead of going through the aura prompt, which left the dragon menu open over the info panel
 - When FC trains the dragon with its menu closed, the menu is closed again afterwards (the game opens it on every training); training from an open menu leaves it open
