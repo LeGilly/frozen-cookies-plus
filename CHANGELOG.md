@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.1 · 2026-11-25
+- Stock market: FC+ hires brokers before trading, whenever one fits above the golden cookie bank (each costs 20 minutes of raw production and cuts the 20% buying fee by 5%; FC's own hiring only ran when its next purchase was a building, so it rarely did)
+- Stock market: a good is only sold for at least 5% more than it cost with fees. Before, the 5% was counted on the price before fees, so a "profitable" sale could lose up to 15% to the fee
+
 ## 1.11.0 · 2026-11-25
 - Heavenly upgrades: Persistent memory (research 10x as fast, 500 chips) now comes before Season switcher. While saving for an upgrade out of reach, later ones on the priority list costing at most half as much are still bought; before, everything waited (with 945 chips, Persistent memory waited for Season switcher's 1,211)
 - Smart ascension waits for one-time goals still in reach before ascending, at most 8 hours per run: research up to Elder Pact once you own Persistent memory (wrinklers and the Elder Pledge come from it; without it, the 4.5 hours are better spent ascending to buy it), 5 Elder Pledges and the Covenant, 200 reindeer and Santa's final form at Christmas. These only count within one run (research, pledges, the reindeer count and Santa's level reset at every ascension), and prestige doubled before they could finish. The infobox shows what it waits for and how long at most
