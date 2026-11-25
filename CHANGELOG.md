@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.12.2 · 2026-11-25
+- Apply recommended options now rests in Christmas instead of Business Day. Reindeer bring a minute of production each (about +25% income, up to +100% with Reindeer baking grounds and Ho ho ho-flavored frosting), while Business Day only helps with Startrade (golden cookies 5% more often). It also brings Reindeer sleigher (200 reindeer) and Santa's last level, which must happen within one run. FC still switches to the other seasons for their drops and comes back. Press the button again to pick it up
+
 ## 1.12.1 · 2026-11-25
 - Elder Pledges in under a minute: buying the Elder Covenant ends the running pledge, and revoking it makes the Elder Pledge available again on the next frame (with Elder Pact). FC+ cycles Pledge, Covenant, Revoke, about one pledge every 4 seconds, for a few cookies each (the pledge, 66.7 trillion for the Covenant, 6.7 billion to revoke) instead of waiting 30 minutes per pledge. It goes to 10 pledges every run: besides Elder nap, Elder slumber and Elder calm, 10 pledges in one run unlock the Sacrificial rolling pins upgrade (needed for a complete run, cleared at ascension). It ends with the Covenant revoked, and waits while a wrinkler is being poked for Wrinkler poker or a shiny one is kept (each pledge pops every wrinkler)
 

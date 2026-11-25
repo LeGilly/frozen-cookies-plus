@@ -304,6 +304,12 @@ recommendedSettingsAction = function () {
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;
+        // Rest in Christmas, not Business Day: reindeer bring a minute of production each (about
+        // +25% income, up to +100% with Reindeer baking grounds and Ho ho ho-flavored frosting),
+        // and 200 reindeer and Santa's last level must happen within one run. Business Day only
+        // helps with Startrade (+5% golden cookies). FC still visits the other seasons for their
+        // drops and comes back.
+        FrozenCookies.defaultSeason = 2;
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;

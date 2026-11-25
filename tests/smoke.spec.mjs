@@ -181,5 +181,6 @@ test("the Recommended button applies FC and FC+ recommended options, then the ga
   await page.locator("#fcpRecommendedButton").click();
   expect(await page.evaluate(() => [FrozenCookies.burstBuy, FrozenCookies.smartAscend, FrozenCookies.autoBuy, FrozenCookies.recommendedSettings, window._reload]))
     .toEqual([1, 1, 1, 0, true]);
+  expect(await page.evaluate(() => [FrozenCookies.defaultSeasonToggle, seasons[FrozenCookies.defaultSeason]])).toEqual([1, "christmas"]);
   noErrors(errors);
 });

@@ -11,7 +11,7 @@ Download `FrozenCookiesPlus-<version>.zip` from this repository's **Releases** p
    (In Steam: right-click Cookie Clicker → Manage → Browse local files, then `resources\app\mods\local`.)
 2. Disable or remove any other Frozen Cookies mod, since two automation mods conflict.
 3. Start the game. Under **Options → Manage mods**, check that *Frozen Cookies Plus* is enabled, then restart if the game asks.
-4. Open the **Frozen Cookies** button (top right, where *Info* used to be) and press **Apply recommended options** at the top. It sets every option, including the Plus ones, and reloads the game.
+4. Open the **Frozen Cookies** button (top right, where *Info* used to be) and press **Apply recommended options** at the top. It sets every option, including the Plus ones, and reloads the game. Its resting season is Christmas (reindeer bring a minute of production each); FC still visits the other seasons for their drops.
 
 Everything is bundled in one `main.js` (libraries included), so the mod works offline and never downloads code.
 
