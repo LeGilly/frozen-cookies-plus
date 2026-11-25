@@ -16,6 +16,8 @@ export async function loadGame(page) {
   await page.evaluate(() => { window.module = { exports: {} }; window.exports = window.module.exports; });
   await page.addScriptTag({ content: BUNDLE });
   await page.waitForFunction(() => window.FCP && Game.mods["frozen_cookies_plus"], null, { timeout: 60_000 });
+  // Skip the boot settling delay of smart ascension (ascend.spec.mjs tests it).
+  await page.evaluate(() => { if (FCP.bootTime) FCP.bootTime = 0; });
   return errors;
 }
 

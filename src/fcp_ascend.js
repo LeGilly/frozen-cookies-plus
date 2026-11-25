@@ -279,6 +279,16 @@ FCP.ascendCookiesLeft = function () {
     return Math.max(0, Game.HowManyCookiesReset(Game.prestige + FCP.ascendTarget()) - Game.cookiesReset - Game.cookiesEarned);
 };
 
+// At boot the save is loaded at once, but each minigame's script loads a moment later: until
+// then the garden has no plot, so a seed growing in it wouldn't hold the ascension. Nothing is
+// decided until every unlocked minigame is loaded, and FC+ has run for FCP.BOOT_SECONDS.
+FCP.BOOT_SECONDS = 15;
+FCP.bootTime = Date.now();
+FCP.gameSettled = function () {
+    if ((Date.now() - FCP.bootTime) / 1000 < FCP.BOOT_SECONDS) return false;
+    return Game.ObjectsById.every(function (o) { return !o.minigameUrl || o.level <= 0 || o.minigameLoaded; });
+};
+
 FCP.ascendTick = function () {
     FCP.patchHeavenlyBuy();
     if (!FrozenCookies.smartAscend) {
@@ -312,6 +322,10 @@ FCP.ascendTick = function () {
             // A time only when close: income keeps growing, so a far-off estimate at today's
             // income (years, early in a run) means nothing.
             (rate > 0 && left / rate < 6 * 3600 ? " · ~" + FCP.shortTime(left / rate) : "");
+        return;
+    }
+    if (!FCP.gameSettled()) {
+        FCP.status["Ascension"] = "ready · checking goals (game still loading)";
         return;
     }
     // Worth it, but first the one-time goals this run can still finish (at most 8 hours).

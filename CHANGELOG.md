@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.12.5 · 2026-11-25
+- Smart ascension no longer ascends right after the game starts while a goal should hold it. At boot the save loads at once but each minigame's script loads a moment later, and until then the garden had no plot, so a new seed growing in it didn't hold the ascension. It now waits until every unlocked minigame is loaded, and 15 seconds after start, before deciding ("ready · checking goals (game still loading)"). The other goals (research, pledges, reindeer, Santa) come from the save and were already there at boot
+
 ## 1.12.4 · 2026-11-25
 - Shorter infobox lines, with times shown as their two biggest units ("5h 33m"). For example:
   - Next ascension: "ready · waiting: new Cronerice seed (5h 33m), reindeer (42/200, 4h 56m) · max 5h 41m", or "at +5,727 levels (prestige ×2) · 4,022 so far · ~8m 6s"

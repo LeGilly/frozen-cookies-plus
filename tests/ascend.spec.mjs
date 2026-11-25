@@ -92,6 +92,28 @@ test("a run ready to ascend waits for one-time goals still in reach, at most 8 h
   noErrors(errors);
 });
 
+test("at boot, nothing is decided before the minigames are loaded (a seed in the garden holds it)", async ({ page }) => {
+  const errors = await loadGame(page);
+  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpAscendHold"); });
+  await page.evaluate(() => { Game.Objects.Farm.level = Math.max(1, Game.Objects.Farm.level); Game.LoadMinigames(); });
+  await page.waitForFunction(() => Game.Objects.Farm.minigameLoaded);
+  // As right after a relaunch: the garden script not loaded yet, the run ready to ascend.
+  await page.evaluate(() => { Game.Objects.Farm.minigameLoaded = false; Game.Earn(Game.HowManyCookiesReset(250) - Game.cookiesReset); });
+  await setOptions(page, { smartAscend: 1, challengeRuns: 0, autoBuy: 0, autoGarden: 1 });
+  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toBe("ready · checking goals (game still loading)");
+  // Loaded, with a new seed growing: the seed holds it.
+  await page.evaluate(() => {
+    const G = Game.Objects.Farm.minigame, p = G.plants.thumbcorn;
+    p.unlocked = 0; G.plot[0][0] = [p.id + 1, 0];
+    Game.Objects.Farm.minigameLoaded = true;
+  });
+  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready · waiting: new Thumbcorn seed/);
+  expect(await page.evaluate(() => Game.resets)).toBe(0);
+  // And right after FC+ starts, it waits its settling time whatever the minigames.
+  expect(await page.evaluate(() => { FCP.bootTime = Date.now(); return FCP.gameSettled(); })).toBe(false);
+  noErrors(errors);
+});
+
 test("a goal nearly done when the 8 hours run out gets up to 2 more hours", async ({ page }) => {
   const errors = await loadGame(page);
   const left = await page.evaluate(() => {
