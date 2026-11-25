@@ -49,7 +49,7 @@ FCP.ascensionSoon = function () {
     if (FCP.runLevels() >= FCP.ascendTarget()) {
         // Ready: only one-time goals can still hold it, for what is left of their 8 hours.
         if (!FCP.ascendHolds().length) return true;
-        return FCP.HOLD_HOURS * 3600 - (Date.now() - FCP.holdSince()) / 1000 < horizon;
+        return FCP.holdLeft(FCP.ascendHolds()) < horizon;
     }
     var rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
     return rate > 0 && FCP.ascendCookiesLeft() / rate < horizon;

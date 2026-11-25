@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.12.3 · 2026-11-25
+- Smart ascension: a goal estimated to finish soon after the 8-hour wait ends is still waited for, up to 2 more hours (10 hours in all at most), instead of being cut off nearly done. The limit follows the estimates as they move (reindeer, plant growth). "at most … more" in the infobox includes it, and the stock market's "ascension soon" check uses the same limit
+
 ## 1.12.2 · 2026-11-25
 - Apply recommended options now rests in Christmas instead of Business Day. Reindeer bring a minute of production each (about +25% income, up to +100% with Reindeer baking grounds and Ho ho ho-flavored frosting), while Business Day only helps with Startrade (golden cookies 5% more often). It also brings Reindeer sleigher (200 reindeer) and Santa's last level, which must happen within one run. FC still switches to the other seasons for their drops and comes back. Press the button again to pick it up
 

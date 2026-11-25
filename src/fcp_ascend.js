@@ -188,11 +188,18 @@ FCP.patchHeavenlyBuy = function () {
 // When the run is ready to ascend, it waits for the ones still in reach, once each (until the
 // achievement is won) and at most FCP.HOLD_HOURS per run.
 FCP.HOLD_HOURS = 8;
+// A goal whose estimate ends within this much after the 8 hours still gets waited for: cutting
+// it off when it is nearly done wastes the hours already spent on it. Estimates (reindeer,
+// plant growth) drift, so the limit follows them, but never goes past 8 + 2 hours in all.
+FCP.HOLD_GRACE_HOURS = 2;
 FCP.researchSteps = function () {
     return FCP.researchChain.concat(["Elder Pact"]).filter(function (n) { return Game.Upgrades[n] && !Game.Upgrades[n].bought; }).length;
 };
 FCP.ascendHolds = function () {
-    var holds = [], fps = Game.fps, eta = function (sec) { return sec > 0 ? ", about " + timeDisplay(Math.ceil(sec)) : ""; };
+    var holds = [], fps = Game.fps, lastSec = 0;
+    var eta = function (sec) { lastSec = sec; return sec > 0 ? ", about " + timeDisplay(Math.ceil(sec)) : ""; };
+    // Each goal keeps the estimate given to eta() in its label (0: none).
+    var add = function (label) { holds.push({ label: label, sec: lastSec }); lastSec = 0; };
     // Research up to Elder Pact: wrinklers (One mind) and the Elder Pledge come from it. Only with
     // Persistent memory (research 10x as fast, about 30 minutes in all): without it, the 4.5 hours
     // are better spent ascending, which pays for Persistent memory (500 chips) soon enough.
@@ -201,12 +208,12 @@ FCP.ascendHolds = function () {
     if (needsElders && Game.Has("Persistent memory") && !Game.Has("Elder Pact") && bingo && (bingo.unlocked || bingo.bought)) {
         var steps = FCP.researchSteps(),
             per = Game.baseResearchTime / 10;
-        holds.push({ label: "research (" + steps + " steps to Elder Pact" + eta((steps * per) / fps) + ")" });
+        add("research (" + steps + " steps to Elder Pact" + eta((steps * per) / fps) + ")");
     }
     // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
     // seconds each with the Covenant cycle (fcp_achievements.js).
     if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted && FCP.pledgesWanted())
-        holds.push({ label: "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")" });
+        add("Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
     // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
     // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
     var G = Game.Objects["Farm"].minigame;
@@ -221,22 +228,33 @@ FCP.ascendHolds = function () {
         }
         if (growing.length) {
             growing.sort(function (a, b) { return a.sec - b.sec; });
-            holds.push({ label: "a new " + growing[0].name + " seed maturing in the garden" + eta(growing[0].sec) });
+            add("a new " + growing[0].name + " seed maturing in the garden" + eta(growing[0].sec));
         }
     }
     if (Game.season === "christmas") {
         // 200 reindeer in one run.
         if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) {
             var r = Game.shimmerTypes.reindeer, avg = r && r.maxTime > r.minTime ? (r.minTime + 0.25 * (r.maxTime - r.minTime)) / fps : 0;
-            holds.push({ label: "Reindeer sleigher (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")" });
+            add("Reindeer sleigher (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")");
         }
         // Santa's final form.
         if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < 14)
-            holds.push({ label: "All hail Santa (Santa " + Game.santaLevel + "/14)" });
+            add("All hail Santa (Santa " + Game.santaLevel + "/14)");
     }
     return holds;
 };
 // When this run started waiting (kept through a reload of the game).
+// Seconds the run may still wait for its goals: 8 hours from when it started waiting, stretched
+// to cover a goal estimated to finish within the 2 extra hours.
+FCP.holdLeft = function (holds) {
+    var elapsed = (Date.now() - FCP.holdSince()) / 1000, limit = FCP.HOLD_HOURS * 3600;
+    var maxLimit = (FCP.HOLD_HOURS + FCP.HOLD_GRACE_HOURS) * 3600;
+    (holds || []).forEach(function (h) {
+        var finish = elapsed + (h.sec || 0);
+        if (h.sec > 0 && finish > limit && finish <= maxLimit) limit = finish;
+    });
+    return limit - elapsed;
+};
 FCP.holdSince = function () {
     var key = "fcpAscendHold", run = String(Game.startDate), saved = null;
     try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
@@ -298,8 +316,7 @@ FCP.ascendTick = function () {
     // Worth it, but first the one-time goals this run can still finish (at most 8 hours).
     var holds = FCP.ascendHolds();
     if (holds.length) {
-        var since = FCP.holdSince();
-        var left = FCP.HOLD_HOURS * 3600 - (Date.now() - since) / 1000;
+        var left = FCP.holdLeft(holds);
         if (left > 0) {
             FCP.status["Ascension"] = "ready, waiting for " + holds.map(function (h) { return h.label; }).join(" · ") +
                 " · at most " + timeDisplay(Math.ceil(left)) + " more";

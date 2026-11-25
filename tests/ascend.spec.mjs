@@ -92,6 +92,18 @@ test("a run ready to ascend waits for one-time goals still in reach, at most 8 h
   noErrors(errors);
 });
 
+test("a goal nearly done when the 8 hours run out gets up to 2 more hours", async ({ page }) => {
+  const errors = await loadGame(page);
+  const left = await page.evaluate(() => {
+    localStorage.setItem("fcpAscendHold", JSON.stringify({ run: String(Game.startDate), since: Date.now() - 7.5 * 3600e3 }));
+    const h = (sec) => Math.round(FCP.holdLeft([{ label: "x", sec }]) / 60);
+    return { none: h(0), soon: h(10 * 60), close: h(90 * 60), far: h(3 * 3600), mixed: Math.round(FCP.holdLeft([{ sec: 90 * 60 }, { sec: 3 * 3600 }]) / 60) };
+  });
+  // Minutes left, 7h30 into the wait.
+  expect(left).toEqual({ none: 30, soon: 30, close: 90, far: 30, mixed: 90 });
+  noErrors(errors);
+});
+
 test("research is only waited for once Persistent memory makes it quick", async ({ page }) => {
   const errors = await loadGame(page);
   const holds = await page.evaluate(() => {
