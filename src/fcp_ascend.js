@@ -192,28 +192,57 @@ FCP.HOLD_HOURS = 8;
 // it off when it is nearly done wastes the hours already spent on it. Estimates (reindeer,
 // plant growth) drift, so the limit follows them, but never goes past 8 + 2 hours in all.
 FCP.HOLD_GRACE_HOURS = 2;
-FCP.researchSteps = function () {
-    return FCP.researchChain.concat(["Elder Pact"]).filter(function (n) { return Game.Upgrades[n] && !Game.Upgrades[n].bought; }).length;
+// Research steps left up to and including `target` (default Elder Pact, the last one).
+FCP.researchSteps = function (target) {
+    var chain = FCP.researchChain.concat(["Elder Pact"]), i = chain.indexOf(target || "Elder Pact");
+    return chain.slice(0, i < 0 ? chain.length : i + 1).filter(function (n) { return Game.Upgrades[n] && !Game.Upgrades[n].bought; }).length;
 };
+// What each research target is waited for: the pledge achievements need Elder Pact (the Pledge
+// unlocks with it), Wrinkler poker only needs a wrinkler, which comes with One mind.
+FCP.RESEARCH_GOALS = [
+    // Wrinkler poker needs a single wrinkler, which comes with One mind.
+    { target: "One mind", achievs: ["Wrinkler poker"] },
+    // The pledges unlock with Elder Pact; the pop counts want it too, since wrinklers spawn as
+    // often as the elder wrath (1 with One mind, 3 with Elder Pact: 3x as fast).
+    { target: "Elder Pact", achievs: ["Elder nap", "Elder slumber", "Elder calm", "Wrinklesquisher", "Moistburster"] }
+];
 FCP.ascendHolds = function () {
     var holds = [], fps = Game.fps, lastSec = 0;
     var eta = function (sec) { lastSec = sec; return sec > 0 ? ", " + FCP.shortTime(sec) : ""; };
     // Each goal keeps the estimate given to eta() in its label (0: none).
     var add = function (label) { holds.push({ label: label, sec: lastSec }); lastSec = 0; };
-    // Research up to Elder Pact: wrinklers (One mind) and the Elder Pledge come from it. Only with
-    // Persistent memory (research 10x as fast, about 30 minutes in all): without it, the 4.5 hours
-    // are better spent ascending, which pays for Persistent memory (500 chips) soon enough.
-    var needsElders = ["Elder nap", "Elder slumber", "Elder calm", "Wrinkler poker", "Wrinklesquisher", "Moistburster"].some(function (n) { return !FCP.has(n); });
+    // Research for the elder achievements: up to One mind for the wrinkler ones, up to Elder Pact
+    // for the pledge ones (FCP.RESEARCH_GOALS); the furthest target still needed is waited for.
+    // Only with Persistent memory (research 10x as fast, about 30 minutes in all): without it, the
+    // 4.5 hours are better spent ascending, which pays for Persistent memory (500 chips) soon enough.
     var bingo = Game.Upgrades["Bingo center/Research facility"];
-    if (needsElders && Game.Has("Persistent memory") && !Game.Has("Elder Pact") && bingo && (bingo.unlocked || bingo.bought)) {
-        var steps = FCP.researchSteps(),
-            per = Game.baseResearchTime / 10;
-        add("research (" + steps + " to Elder Pact" + eta((steps * per) / fps) + ")");
+    if (Game.Has("Persistent memory") && bingo && (bingo.unlocked || bingo.bought)) {
+        var target = null, missing = [];
+        FCP.RESEARCH_GOALS.forEach(function (g) {
+            var m = g.achievs.filter(function (n) { return !FCP.has(n); });
+            if (m.length && !Game.Has(g.target)) {
+                target = g.target;
+                missing = m;
+            }
+        });
+        if (target) {
+            var steps = FCP.researchSteps(target),
+                per = Game.baseResearchTime / 10;
+            add("research (" + steps + " to " + target + eta((steps * per) / fps) + " · for " + missing[0] +
+                (missing.length > 1 ? " +" + (missing.length - 1) : "") + ")");
+        }
     }
     // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
     // seconds each with the Covenant cycle (fcp_achievements.js).
     if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted && FCP.pledgesWanted())
         add("pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
+    // 50 and 200 wrinklers popped in one run (Wrinklesquisher, Moistburster): the Achievement Hunter
+    // pops them as they come out (fcp_achievements.js). Waited for once wrinklers can spawn.
+    var pops = FrozenCookies.achievementHunter && FCP.popTarget ? FCP.popTarget() : 0;
+    if (pops && Game.Has("One mind") && Game.wrinklersPopped < pops) {
+        var rate = FCP.wrinklerSpawnRate();
+        add("pops (" + Game.wrinklersPopped + "/" + pops + eta(rate > 0 ? (pops - Game.wrinklersPopped) / rate : 0) + ")");
+    }
     // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
     // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
     var G = Game.Objects["Farm"].minigame;

@@ -55,6 +55,12 @@ the function names.
 - Sacrificial rolling pins: unlocked by 10 pledges in one run.
 - Wrinklers only spawn with `elderWrath > 0`. A poke costs 0.75 hp, a wrinkler dies at 0.5 or less and heals
   0.04 hp per frame: about one poke a second is safe. Wrinkler poker needs 50 pokes on one wrinkler.
+- Wrinkler spawns (`Game.UpdateWrinklers`): each empty slot, each frame, `0.00001 × elderWrath`, × the garden's
+  `wrinklerSpawn` effect, × 5 with Unholy bait, × 2.5/2/1.5 with Scorn (diamond/ruby/jade). The elder wrath
+  climbs by itself to One mind + Communal brainsweep + Elder Pact owned (so 3x as fast with Elder Pact) and is
+  0 under a Pledge, the Covenant or with no grandma. No pledge upgrade raises it. Elder spice and Dragon Guts
+  only add slots. `Game.wrinklersPopped` is reset at every ascension (`Game.Reset`, not only hard), so
+  Wrinklesquisher (50) and Moistburster (200) must happen within one run.
 
 ## Dragon
 

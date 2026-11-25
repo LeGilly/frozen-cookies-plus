@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.6 · 2026-11-25
+- Smart ascension's research hold only goes as far as the missing achievements need. Wrinkler poker only needs one wrinkler, which comes with One mind, so it now holds only until One mind. The pledge achievements (Elder nap, Elder slumber, Elder calm) and the pop counts (Wrinklesquisher, Moistburster) still hold until Elder Pact: wrinklers spawn as often as the elder wrath (1 with One mind, 2 with Communal brainsweep, 3 with Elder Pact), so 3 times as fast there. Before, Wrinkler poker alone kept the run researching all the way to Elder Pact. The infobox now says what it waits for: "research (6 to One mind, 18m · for Wrinkler poker)"
+- Wrinklesquisher and Moistburster: the game counts popped wrinklers per run (reset at every ascension), and FC's auto-wrinkler only pops when that helps the next purchase (or at the maximum), so the count depended on it. With the Achievement Hunter, FC+ now pops each wrinkler as soon as it has come out while one of them is missing (it leaves the one being poked for Wrinkler poker, and shiny ones), and smart ascension waits for the count: "pops (20/200, 5h 33m)", the time from the spawn rate (elder wrath, Unholy bait, Scorn, garden). It falls under the same 8-hour limit (+2 hours for a goal nearly done)
+
 ## 1.12.5 · 2026-11-25
 - Smart ascension no longer ascends right after the game starts while a goal should hold it. At boot the save loads at once but each minigame's script loads a moment later, and until then the garden had no plot, so a new seed growing in it didn't hold the ascension. It now waits until every unlocked minigame is loaded, and 15 seconds after start, before deciding ("ready · checking goals (game still loading)"). The other goals (research, pledges, reindeer, Santa) come from the save and were already there at boot
 

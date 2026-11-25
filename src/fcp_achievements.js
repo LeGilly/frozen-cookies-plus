@@ -103,6 +103,47 @@ FCP.patchWrinklerPop = function () {
     shouldPopWrinklers.__fcp = true;
 };
 
+// Wrinklesquisher and Moistburster: 50 and 200 wrinklers popped, counted per run (the game resets
+// Game.wrinklersPopped at every ascension). FC's auto-wrinkler only pops when that helps the next purchase
+// (or at the maximum), and may be off; while one of them is missing, FC+ pops each wrinkler as soon as it has come
+// out (it has sucked next to nothing by then). It leaves the wrinkler being poked for Wrinkler
+// poker, and shiny ones (Shiny pop decides about those).
+FCP.POP_GOALS = [{ name: "Wrinklesquisher", n: 50 }, { name: "Moistburster", n: 200 }];
+FCP.popTarget = function () {
+    var missing = FCP.POP_GOALS.filter(function (g) { return !FCP.has(g.name); });
+    return missing.length ? missing[missing.length - 1].n : 0;
+};
+// Wrinklers spawned per second with every slot empty, at the elder wrath this run's research leads
+// to (it rises to it by itself within a minute or so; 0 under the Covenant or with no grandma).
+FCP.wrinklerSpawnRate = function () {
+    if (Game.Has("Elder Covenant") || Game.Objects["Grandma"].amount == 0) return 0;
+    var wrath = Game.Has("One mind") + Game.Has("Communal brainsweep") + Game.Has("Elder Pact");
+    var chance = 0.00001 * wrath * Game.eff("wrinklerSpawn");
+    if (Game.Has("Unholy bait")) chance *= 5;
+    if (Game.hasGod) {
+        var lvl = Game.hasGod("scorn");
+        chance *= lvl == 1 ? 2.5 : lvl == 2 ? 2 : lvl == 3 ? 1.5 : 1;
+    }
+    return Game.getWrinklersMax() * chance * Game.fps;
+};
+FCP.popWrinklers = function () {
+    var target = FCP.popTarget();
+    if (!target) {
+        FCP.status["Wrinkler pops"] = "";
+        return;
+    }
+    FCP.status["Wrinkler pops"] = Game.wrinklersPopped + "/" + target + " this run";
+    if (FCP.busy()) return;
+    var keep = FCP.pokeTarget(), n = 0;
+    Game.wrinklers.forEach(function (w) {
+        if (w.phase == 2 && w.hp > 0 && w.type != 1 && w !== keep) {
+            w.hp = 0;
+            n++;
+        }
+    });
+    if (n && Game.wrinklersPopped + n >= target) FCP.log("Popped wrinklers up to " + target + " this run.");
+};
+
 // Debt evasion: take a loan right before FC auto-ascends.
 FCP.patchAscend = function () {
     if (Game.Ascend.__fcp) return;
@@ -446,7 +487,9 @@ FCP.classifyAchievement = function (a) {
     if (n === "Pyramid scheme") return ["FC Auto-Banking + FC+ Auto-lumps", "needs level 12 cursors"];
     if (/^(Bibbidi-bobbidi-boo|I'm the wiz|A wizard is you)$/.test(n)) return ["FC Auto-cast", ""];
     if (n === "Here be dragon") return ["FC Auto-dragon", ""];
-    if (/^(Itchscratcher|Wrinklesquisher|Moistburster|Last Chance to See)$/.test(n)) return ["FC Auto-wrinkler", n === "Last Chance to See" ? "turn on Shiny pop" : ""];
+    if (/^(Wrinklesquisher|Moistburster)$/.test(n))
+        return FrozenCookies.achievementHunter ? ["FC+ Achievement Hunter", "pops " + Game.wrinklersPopped + " / " + (n === "Moistburster" ? 200 : 50) + " this run"] : ["FC Auto-wrinkler", "in one run"];
+    if (/^(Itchscratcher|Last Chance to See)$/.test(n)) return ["FC Auto-wrinkler", n === "Last Chance to See" ? "turn on Shiny pop" : ""];
     if (/^(Oh deer|Sleigh of hand|Reindeer sleigher)$/.test(n)) return ["FC Auto-reindeer", ""];
     if (/^(Golden cookie|Lucky cookie|A stroke of luck|Fortune|Leprechaun|Black cat's paw|Seven horseshoes|Early bird|Fading luck|Wrath cookie)$/.test(n))
         return ["FC Auto-golden cookies", ""];
@@ -482,6 +525,7 @@ FCP.achievementReport = function () {
 
 FCP.addTask("hunter", function () { return !!FrozenCookies.achievementHunter; }, FCP.hunterTick, 2000);
 FCP.addTask("poke", function () { return !!FrozenCookies.achievementHunter && !FCP.has("Wrinkler poker"); }, FCP.pokeWrinkler, 700);
+FCP.addTask("pops", function () { return !!FrozenCookies.achievementHunter && FCP.popTarget() > 0; }, FCP.popWrinklers, 2000);
 FCP.addTask("challenge", function () { return !!FrozenCookies.challengeRuns; }, FCP.challengeTick, 2000);
 FCP.addTask("speedclick", function () { return !!FrozenCookies.challengeRuns; }, FCP.speedClick, 20);
 FCP.addTask("elder", function () { return !!FrozenCookies.elderPledgeAchievs; }, FCP.elderTick, 2000);

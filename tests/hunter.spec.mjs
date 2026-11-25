@@ -24,6 +24,19 @@ test("it pokes a wrinkler 50 times without popping it", async ({ page }) => {
   noErrors(errors);
 });
 
+test("it pops wrinklers as they come out until Moistburster, leaving the one being poked", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = await loadGame(page);
+  await page.evaluate(() => { Game.Earn(1e8); Game.Objects.Grandma.buy(10); Game.Upgrades["One mind"].earn(); Game.elderWrath = 3; Game.wrinklersPopped = 197; for (let i = 0; i < 4; i++) Game.SpawnWrinkler(); });
+  await page.waitForFunction(() => Game.wrinklers.filter((w) => w.phase == 2).length >= 4, null, { timeout: 60_000 });
+  await setOptions(page, { achievementHunter: 1, autoWrinkler: 0 });
+  await expect.poll(() => won(page, "Moistburster"), { timeout: 30_000 }).toBeTruthy();
+  // Wrinkler poker isn't won yet: the wrinkler being poked is left alive.
+  expect(await page.evaluate(() => Game.wrinklers.filter((w) => w.phase > 0 && w.hp > 0).length)).toBeGreaterThanOrEqual(1);
+  expect(await page.evaluate(() => Game.wrinklersPopped)).toBeGreaterThanOrEqual(200);
+  noErrors(errors);
+});
+
 test("FC's auto-wrinkler leaves the wrinkler being poked alone", async ({ page }) => {
   const errors = await loadGame(page);
   await richGame(page, { buildings: 100 });

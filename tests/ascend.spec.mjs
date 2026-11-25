@@ -136,7 +136,49 @@ test("research is only waited for once Persistent memory makes it quick", async 
     return { without, withPM };
   });
   expect(holds.without.some((l) => /^research/.test(l))).toBe(false);
-  expect(holds.withPM.some((l) => /^research \(10 to Elder Pact, 30m\)$/.test(l))).toBe(true);
+  expect(holds.withPM.some((l) => /^research \(10 to Elder Pact, 30m · for Elder nap \+4\)$/.test(l))).toBe(true);
+  noErrors(errors);
+});
+
+test("research holds only as far as the missing achievements need: One mind for Wrinkler poker, Elder Pact for pledges and pops", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    Game.Unlock("Bingo center/Research facility");
+    Game.Upgrades["Persistent memory"].earn();
+    const research = () => FCP.ascendHolds().map((h) => h.label).filter((l) => /^research/.test(l));
+    ["Elder nap", "Elder slumber", "Elder calm", "Wrinklesquisher", "Moistburster"].forEach((n) => Game.Win(n));
+    const pokerOnly = research();
+    ["Bingo center/Research facility", "Specialized chocolate chips", "Designer cocoa beans", "Ritual rolling pins", "Underworld ovens", "One mind"]
+      .forEach((n) => Game.Upgrades[n].earn());
+    const afterOneMind = research();
+    Game.Achievements["Moistburster"].won = 0;
+    const pops = research();
+    return { pokerOnly, afterOneMind, pops };
+  });
+  expect(r.pokerOnly).toEqual(["research (6 to One mind, 18m · for Wrinkler poker)"]);
+  expect(r.afterOneMind).toEqual([]);
+  expect(r.pops).toEqual(["research (4 to Elder Pact, 12m · for Moistburster)"]);
+  noErrors(errors);
+});
+
+test("200 wrinklers popped in one run hold the ascension (with the Achievement Hunter), with a time from the spawn rate", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    const pops = () => FCP.ascendHolds().map((h) => h.label).filter((l) => /^pops/.test(l));
+    Game.Earn(1e6); Game.Objects.Grandma.buy(1);
+    ["One mind", "Communal brainsweep", "Elder Pact"].forEach((n) => Game.Upgrades[n].earn());
+    Game.wrinklersPopped = 20;
+    FrozenCookies.achievementHunter = 0;
+    const off = pops();
+    FrozenCookies.achievementHunter = 1;
+    const on = pops(); // 10 slots × 0.00003 × 30 fps = 0.009 a second: 180 left in 5h 33m
+    Game.Win("Wrinklesquisher"); Game.Win("Moistburster");
+    const done = pops();
+    return { off, on, done };
+  });
+  expect(r.off).toEqual([]);
+  expect(r.on).toEqual(["pops (20/200, 5h 33m)"]);
+  expect(r.done).toEqual([]);
   noErrors(errors);
 });
 
