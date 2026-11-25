@@ -250,6 +250,7 @@ FCP.infoLines = function (t_d) {
     if (FrozenCookies.autoStocks && FCP.status["Stock market"]) plus.push(["#4fc3f7", "Stock market", FCP.status["Stock market"]]);
     var waiting = FCP.hunterWaiting();
     if (waiting.length) plus.push(["#f48fb1", "Waiting for", waiting.join(" · ")]);
+    if (FCP.upgradeSummary) plus.push(["#ffd54f", "Upgrades", FCP.upgradeSummary()]);
     var close = FCP.closestMilestones(2);
     if (close.length)
         plus.push([

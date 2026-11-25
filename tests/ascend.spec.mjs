@@ -106,6 +106,25 @@ test("research is only waited for once Persistent memory makes it quick", async 
   noErrors(errors);
 });
 
+test("a new seed growing in the garden holds the ascension until it matures", async ({ page }) => {
+  const errors = await loadGame(page);
+  await page.evaluate(() => { Game.Objects.Farm.level = Math.max(1, Game.Objects.Farm.level); Game.LoadMinigames(); });
+  await page.waitForFunction(() => Game.Objects.Farm.minigame && Game.Objects.Farm.minigame.plot);
+  const r = await page.evaluate(() => {
+    FrozenCookies.autoGarden = 1;
+    const G = Game.Objects.Farm.minigame, p = G.plants.thumbcorn;
+    p.unlocked = 0;
+    G.plot[0][0] = [p.id + 1, 0];
+    const growing = FCP.ascendHolds().map((h) => h.label);
+    G.plot[0][0] = [p.id + 1, p.mature];
+    const ripe = FCP.ascendHolds().map((h) => h.label);
+    return { growing, ripe };
+  });
+  expect(r.growing.some((l) => /^a new Thumbcorn seed maturing in the garden, about /.test(l))).toBe(true);
+  expect(r.ripe.some((l) => /garden/.test(l))).toBe(false); // mature: the garden bot harvests it now
+  noErrors(errors);
+});
+
 test("a permanent upgrade slot bought on the ascension screen is filled, and its prompt closed", async ({ page }) => {
   const errors = await loadGame(page);
   await setOptions(page, { smartAscend: 1 });

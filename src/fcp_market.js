@@ -2,6 +2,11 @@
 // Every good drifts around a resting value (10 + 10*id + bank level - 1).
 // Buy when the price is well under it and not crashing, sell when it is
 // well over it, above what we paid (fees included) and not still climbing fast.
+// The game resets the market at every ascension: stock held, brokers and office level are lost,
+// not sold. Selling never counts as cookies baked (no prestige), so stock only helps by paying
+// for buildings during the run. When an ascension is less than FCP.STOCK_MIN_HOURS away (prices
+// take hours to come back up), nothing more is bought and anything in profit is sold.
+//
 // Brokers: each costs 20 minutes of the highest raw production ($1,200 in market dollars) and
 // cuts the fee by 5% of itself, about 1% of what is bought. One only pays for itself once that
 // much stock has been bought ($120,000 for the first), so the next broker is hired once FC+'s
@@ -13,25 +18,43 @@ FCP.stockSellRatio = 1.25;
 FCP.stockMargin = 1.05; // a sale must beat what was paid, fees included, by 5%
 
 // What each good cost per unit, fees included, when FC+ last bought it (the game only keeps
-// the price before fees). Kept with the save's run in localStorage.
+// the price before fees). Kept per run in localStorage: the market is reset at ascension.
 FCP.stockPaid = function (id, value) {
-    var key = "fcpStockPaid", data = {};
-    try { data = JSON.parse(localStorage.getItem(key) || "{}") || {}; } catch (e) {}
+    var key = "fcpStockPaid", run = String(Game.startDate), data = null;
+    try { data = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+    if (!data || typeof data !== "object" || data.run !== run) data = { run: run };
     if (value === undefined) return data[id];
     data[id] = value;
     try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
 };
 
-// Market dollars of stock FC+ has bought (kept in localStorage).
+FCP.STOCK_MIN_HOURS = 2;
+
+// Market dollars of stock FC+ has bought this run (brokers are lost at ascension too).
 FCP.stockVolume = function (add) {
-    var key = "fcpStockVolume", v = 0;
-    try { v = parseFloat(localStorage.getItem(key)) || 0; } catch (e) {}
+    var key = "fcpStockVolume", run = String(Game.startDate), d = null;
+    try { d = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+    if (!d || typeof d !== "object" || d.run !== run) d = { run: run, v: 0 };
     if (add) {
-        v += add;
-        try { localStorage.setItem(key, String(v)); } catch (e) {}
+        d.v += add;
+        try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {}
     }
-    return v;
+    return d.v;
 };
+
+// Is an ascension coming before bought stock could recover?
+FCP.ascensionSoon = function () {
+    if (!FrozenCookies.smartAscend || !FCP.ascendTarget || Game.ascensionMode == 1) return false;
+    var horizon = FCP.STOCK_MIN_HOURS * 3600;
+    if (FCP.runLevels() >= FCP.ascendTarget()) {
+        // Ready: only one-time goals can still hold it, for what is left of their 8 hours.
+        if (!FCP.ascendHolds().length) return true;
+        return FCP.HOLD_HOURS * 3600 - (Date.now() - FCP.holdSince()) / 1000 < horizon;
+    }
+    var rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
+    return rate > 0 && FCP.ascendCookiesLeft() / rate < horizon;
+};
+
 // Would the next broker have paid for itself over the purchases made so far?
 FCP.brokerWorth = function (B) {
     var saves = 0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05; // share of each purchase it saves
@@ -54,9 +77,10 @@ FCP.stockTick = function () {
     var B = Game.Objects["Bank"].minigame;
     if (!B || !B.goodsById) return;
 
-    FCP.hireBrokers(B);
+    var soon = FCP.ascensionSoon();
+    if (!soon) FCP.hireBrokers(B);
     var overhead = 1 + 0.01 * (20 * Math.pow(0.95, B.brokers));
-    var budget = FCP.spare() * 0.5;
+    var budget = soon ? 0 : FCP.spare() * 0.5;
     var held = 0,
         trades = 0;
 
@@ -69,12 +93,12 @@ FCP.stockTick = function () {
         // Sell
         if (it.stock > 0 && it.last != 1) {
             // it.prev is the price before fees at the last purchase; without our record of the
-            // fees, assume the highest (no brokers).
+            // fees, assume the highest (no brokers). Near an ascension, any profit is taken.
             var paid = FCP.stockPaid(it.id) || it.prev * 1.2;
             var profitable = val > paid * FCP.stockMargin;
             var high = val >= rest * FCP.stockSellRatio;
             var veryHigh = val >= rest * 2;
-            if ((high && profitable && it.mode != 3) || (veryHigh && profitable)) {
+            if (profitable && ((high && it.mode != 3) || veryHigh || soon)) {
                 if (B.sellGood(it.id, it.stock)) {
                     trades++;
                     continue;
@@ -101,6 +125,7 @@ FCP.stockTick = function () {
     FCP.status["Stock market"] =
         held + " good" + (held == 1 ? "" : "s") + " held · total profit $" + Beautify(B.profit) +
         " · fee " + (20 * Math.pow(0.95, B.brokers)).toFixed(1) + "%" +
+        (soon ? " · ascension in under " + FCP.STOCK_MIN_HOURS + " hours: not buying, selling anything in profit (the market is reset at ascension)" : "") +
         (B.brokers < B.getMaxBrokers() ? (FCP.brokerWorth(B) ? " · hiring a broker when the cookies are there" : " · next broker once $" + Beautify(Math.ceil(1200 / (0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05))) + " of stock is bought ($" + Beautify(FCP.stockVolume()) + " so far)") : "");
 };
 

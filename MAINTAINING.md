@@ -22,6 +22,7 @@
 | `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
 | `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
 | `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`). Burst buying: more units and up to 10 extra purchases per autoCookie round when the spare cookies cover the next purchase 10 times |
+| `src/fcp_upgrades.js` | Upgrade tracker: upgrades the run is missing for the game's "Upgrades unlocked" stat, grouped by where they come from (`FCP.upgradeSource`), shown in the FC menu and summed up in the infobox. Read-only |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`). Research chain scoring wraps `upgradeStats`: chain upgrades are scored with the next research (toggled with `upgradeToggle` and put back) |
 | `src/fcp_clicks.js` | Measured click speed (wraps `baseClickingCps`; `FCP.cookieRate` for estimates) |
 | `src/fcp_insight.js` | Store insight: ratings from FC's `recommendationList`, store badges, tooltips (wraps building `tooltip` and `Game.crateTooltip`), income breakdown |
@@ -75,6 +76,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 - `lumps.spec.mjs`: the lump plan early in a run (buildings not bought yet) and the target order.
 - `dragon.spec.mjs`: dragon training timing, the best known aura, the second slot at the top level, no switching back and forth, off leaves auras alone.
 - `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount.
+- `upgrades.spec.mjs`: every missing upgrade gets a source and the totals match the game's stats; the menu list and the infobox line.
 - `bankrules.spec.mjs`: the Golden switch and Godzamok worth checks, extra upgrades waiting for the bank, reward cookies.
 - `bankwatch.spec.mjs`: each reason the bank is below full.
 - `shadow.spec.mjs`: every UI trick, shadow achievement, the gift, the marathon and the cheats, and that each puts the game back as it was.

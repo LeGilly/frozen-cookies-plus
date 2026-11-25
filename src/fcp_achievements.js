@@ -57,26 +57,50 @@ FCP.hunterTick = function () {
         }
     }
 
-    // Wrinkler poker: poke a wrinkler 50 times without killing it.
-    if (!has("Wrinkler poker")) FCP.pokeWrinkler();
+    // Wrinkler poker: see FCP.pokeWrinkler (its own faster task).
+    FCP.patchWrinklerPop();
 
     FCP.patchAscend();
 };
 
-FCP.pokeWrinkler = function () {
+// Wrinkler poker: poke one wrinkler 50 times without killing it. A poke takes 0.75 hp (it dies
+// at 0.5 or less) and a wrinkler heals 0.04 hp a frame, so about one poke a second is safe: the
+// poking runs every 700 ms, and FC's auto-wrinkler leaves that one wrinkler alone meanwhile
+// (it popped fresh wrinklers within seconds, long before the 50th poke).
+FCP.pokeTarget = function () {
+    if (FCP.has("Wrinkler poker")) return null;
     var best = null;
     for (var i = 0; i < Game.wrinklers.length; i++) {
         var me = Game.wrinklers[i];
-        if (me.phase !== 2) continue;
-        if (me.hp - 0.75 <= 0.6) continue; // would die (dies at hp <= 0.5)
+        if (me.phase <= 0 || me.hp <= 0) continue;
         if (!best || me.clicks > best.clicks) best = me;
     }
-    if (!best) return;
+    return best;
+};
+
+FCP.pokeWrinkler = function () {
+    var best = FCP.pokeTarget();
+    if (!best || best.phase !== 2) return;
+    if (best.hp - 0.75 <= 0.6) return; // would die (dies at hp <= 0.5); wait for it to heal
     // Same effect as a click on the wrinkler (see Game.UpdateWrinklers).
     best.clicks++;
     best.hurt = 1;
     best.hp -= 0.75;
-    if (best.clicks >= 50) Game.Win("Wrinkler poker");
+    if (best.clicks >= 50) {
+        Game.Win("Wrinkler poker");
+        FCP.log("Poked a wrinkler 50 times: 'Wrinkler poker'.");
+    }
+};
+
+FCP.patchWrinklerPop = function () {
+    if (typeof shouldPopWrinklers !== "function" || shouldPopWrinklers.__fcp) return;
+    var original = shouldPopWrinklers;
+    shouldPopWrinklers = function () {
+        var list = original.apply(this, arguments);
+        var keep = FrozenCookies.achievementHunter ? FCP.pokeTarget() : null;
+        return keep ? list.filter(function (id) { return id !== keep.id; }) : list;
+    };
+    shouldPopWrinklers.__fcp = true;
 };
 
 // Debt evasion: take a loan right before FC auto-ascends.
@@ -131,6 +155,12 @@ FCP.elderTick = function () {
         }
         return false;
     };
+    // The pledges only unlock with Elder Pact, the last research. FC never buys it on its own (it
+    // turns every golden cookie into a wrath cookie, so it scores as no gain).
+    if ((!FCP.has("Elder slumber") || !FCP.has("Elder calm")) && !Game.Has("Elder Pact")) {
+        buy("Elder Pact");
+        return;
+    }
     if (!FCP.has("Elder slumber")) {
         // Only one pledge can run at a time; the upgrade relocks while active.
         if (Game.pledgeT <= 0) buy("Elder Pledge");
@@ -429,6 +459,7 @@ FCP.achievementReport = function () {
 };
 
 FCP.addTask("hunter", function () { return !!FrozenCookies.achievementHunter; }, FCP.hunterTick, 2000);
+FCP.addTask("poke", function () { return !!FrozenCookies.achievementHunter && !FCP.has("Wrinkler poker"); }, FCP.pokeWrinkler, 700);
 FCP.addTask("challenge", function () { return !!FrozenCookies.challengeRuns; }, FCP.challengeTick, 2000);
 FCP.addTask("speedclick", function () { return !!FrozenCookies.challengeRuns; }, FCP.speedClick, 20);
 FCP.addTask("elder", function () { return !!FrozenCookies.elderPledgeAchievs; }, FCP.elderTick, 5000);

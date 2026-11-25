@@ -336,6 +336,41 @@ FCP.patchMenu = function () {
     Game.UpdateMenu = wrapped;
 };
 
+// Upgrades owned this run, and where each missing one comes from (fcp_upgrades.js).
+FCP.appendUpgradeTracker = function (section) {
+    var report = FCP.upgradeReport();
+    section.append(
+        $("<div>").addClass("listing").html(
+            "<b>Upgrades this run:</b> " + report.owned + " / " + report.total +
+            " (heavenly: " + report.heavenlyOwned + " / " + report.heavenlyTotal + ")"
+        )
+    );
+    section.append(
+        $("<div>").addClass("listing").append(
+            $("<a>").addClass("option")
+                .text(FCP.ui.showMissingUpgrades ? "Hide missing upgrades" : "Show missing upgrades")
+                .click(function () {
+                    FCP.ui.showMissingUpgrades = !FCP.ui.showMissingUpgrades;
+                    Game.UpdateMenu();
+                })
+        )
+    );
+    if (!FCP.ui.showMissingUpgrades) return;
+    Object.keys(report.groups)
+        .sort(function (a, b) { return report.groups[b].length - report.groups[a].length; })
+        .forEach(function (group) {
+            var items = report.groups[group];
+            var box = $("<div>").addClass("listing");
+            box.append($("<b>").text(group + " (" + items.length + ")"));
+            var ul = $("<ul>").css({ margin: "2px 0 6px 18px", "list-style": "disc" });
+            items.forEach(function (u) {
+                ul.append($("<li>").css({ "font-size": "11px" }).html("<b>" + FCP.escape(u.dname) + "</b>" + (u.hint ? " — " + FCP.escape(u.hint) : "")));
+            });
+            box.append(ul);
+            section.append(box);
+        });
+};
+
 FCP.appendMenu = function () {
     var menu = $("#menu");
     if (!menu.length || $("#fcpAchievements").length) return;
@@ -397,6 +432,7 @@ FCP.appendMenu = function () {
                 section.append(box);
             });
     }
+    if (FCP.upgradeReport) FCP.appendUpgradeTracker(section);
     var first = menu.children(".subsection").first();
     if (first.length) first.after(section);
     else menu.append(section);

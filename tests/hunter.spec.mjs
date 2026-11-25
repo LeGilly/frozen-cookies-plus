@@ -24,10 +24,36 @@ test("it pokes a wrinkler 50 times without popping it", async ({ page }) => {
   noErrors(errors);
 });
 
+test("FC's auto-wrinkler leaves the wrinkler being poked alone", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  await page.evaluate(() => { Game.elderWrath = 3; for (let i = 0; i < 3; i++) Game.SpawnWrinkler(); });
+  await page.waitForFunction(() => Game.wrinklers.filter((w) => w.phase == 2).length >= 2, null, { timeout: 60_000 });
+  // Halloween without all its cookies: FC pops every wrinkler it can, straight away.
+  await page.evaluate(() => { Game.season = "halloween"; Game.seasonT = Game.fps * 3600; Game.wrinklers.forEach((w) => { w.sucked = Math.max(w.sucked, 1); }); });
+  await setOptions(page, { achievementHunter: 1, autoWrinkler: 1 });
+  // The others go, the poked one stays and keeps being poked, about one poke a second.
+  await expect.poll(() => page.evaluate(() => Game.wrinklers.filter((w) => w.phase > 0 && w.hp > 0).map((w) => w.clicks)), { timeout: 30_000 })
+    .toEqual([expect.any(Number)]);
+  await expect.poll(() => page.evaluate(() => Math.max(...Game.wrinklers.map((w) => w.clicks))), { timeout: 30_000 }).toBeGreaterThanOrEqual(15);
+  expect(await page.evaluate(() => Game.wrinklers.filter((w) => w.phase > 0 && w.hp > 0).length)).toBe(1);
+  noErrors(errors);
+});
+
+test("Elder Pact is bought once researched, then the first pledge", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  await page.evaluate(() => Game.Unlock("Elder Pact"));
+  await setOptions(page, { elderPledgeAchievs: 1 });
+  await expect.poll(() => page.evaluate(() => !!Game.Has("Elder Pact")), { timeout: 20_000 }).toBe(true);
+  await expect.poll(() => won(page, "Elder nap"), { timeout: 20_000 }).toBeTruthy();
+  noErrors(errors);
+});
+
 test("Elder Covenant is bought for Elder calm and then revoked", async ({ page }) => {
   const errors = await loadGame(page);
   await richGame(page, { buildings: 100 });
-  await page.evaluate(() => { Game.pledges = 5; Game.Win("Elder slumber"); Game.pledgeT = 0; Game.Unlock("Elder Covenant"); });
+  await page.evaluate(() => { Game.Upgrades["Elder Pact"].earn(); Game.pledges = 5; Game.Win("Elder slumber"); Game.pledgeT = 0; Game.Unlock("Elder Covenant"); });
   await setOptions(page, { elderPledgeAchievs: 1 });
   await expect.poll(() => won(page, "Elder calm"), { timeout: 20_000 }).toBeTruthy();
   await expect.poll(() => page.evaluate(() => !Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);

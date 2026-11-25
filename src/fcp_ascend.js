@@ -183,8 +183,8 @@ FCP.patchHeavenlyBuy = function () {
 };
 
 // --- One-time goals worth finishing before ascending ---------------------------------
-// They only count within one run (research, pledges, the reindeer count and Santa's level all
-// reset at every ascension), and prestige doubles quickly, so they could be cut short forever.
+// They only count within one run (research, pledges, the reindeer count, Santa's level and the
+// garden plot all reset at every ascension), and prestige doubles quickly, so they could be cut short forever.
 // When the run is ready to ascend, it waits for the ones still in reach, once each (until the
 // achievement is won) and at most FCP.HOLD_HOURS per run.
 FCP.HOLD_HOURS = 8;
@@ -209,6 +209,23 @@ FCP.ascendHolds = function () {
             var dur = Game.getPledgeDuration ? Game.getPledgeDuration() : fps * 60 * 30;
             holds.push({ label: "Elder slumber (pledges " + Game.pledges + "/5" + eta(((5 - Game.pledges) * dur) / fps) + ")" });
         } else if (!FCP.has("Elder calm")) holds.push({ label: "Elder calm (covenant)" });
+    }
+    // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
+    // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
+    var G = Game.Objects["Farm"].minigame;
+    if (FrozenCookies.autoGarden && G && G.plot && !G.freeze) {
+        var growing = [];
+        for (var y = 0; y < 6; y++) for (var x = 0; x < 6; x++) {
+            var tile = G.plot[y][x], plant = tile[0] > 0 ? G.plantsById[tile[0] - 1] : null;
+            if (plant && !plant.unlocked && tile[1] < plant.mature) {
+                var perStep = plant.ageTick + (plant.ageTickR || 0) / 2;
+                growing.push({ name: plant.name, sec: perStep > 0 ? ((plant.mature - tile[1]) / perStep) * G.stepT : 0 });
+            }
+        }
+        if (growing.length) {
+            growing.sort(function (a, b) { return a.sec - b.sec; });
+            holds.push({ label: "a new " + growing[0].name + " seed maturing in the garden" + eta(growing[0].sec) });
+        }
     }
     if (Game.season === "christmas") {
         // 200 reindeer in one run.
