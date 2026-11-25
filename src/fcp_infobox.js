@@ -80,8 +80,8 @@ FCP.hunterWaiting = function () {
         var B = Game.Objects["Bank"].minigame;
         w.push("Debt evasion (" + (B && B.officeLevel >= 2 ? "next ascension" : "needs bank office 3") + ")");
     }
-    if (FrozenCookies.elderPledgeAchievs && !FCP.has("Elder calm"))
-        w.push(!FCP.has("Elder slumber") ? "Elder slumber (pledges " + Game.pledges + "/5)" : "Elder calm (Covenant)");
+    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted && FCP.pledgesWanted())
+        w.push(Game.Has("Elder Pact") ? "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + " this run)" : "Elder Pledges (needs Elder Pact)");
     return w;
 };
 

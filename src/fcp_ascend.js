@@ -203,13 +203,10 @@ FCP.ascendHolds = function () {
             per = Game.baseResearchTime / 10;
         holds.push({ label: "research (" + steps + " steps to Elder Pact" + eta((steps * per) / fps) + ")" });
     }
-    // Elder Pledges (5 in one run), then the Covenant.
-    if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact")) {
-        if (!FCP.has("Elder slumber")) {
-            var dur = Game.getPledgeDuration ? Game.getPledgeDuration() : fps * 60 * 30;
-            holds.push({ label: "Elder slumber (pledges " + Game.pledges + "/5" + eta(((5 - Game.pledges) * dur) / fps) + ")" });
-        } else if (!FCP.has("Elder calm")) holds.push({ label: "Elder calm (covenant)" });
-    }
+    // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
+    // seconds each with the Covenant cycle (fcp_achievements.js).
+    if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted && FCP.pledgesWanted())
+        holds.push({ label: "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")" });
     // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
     // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
     var G = Game.Objects["Farm"].minigame;

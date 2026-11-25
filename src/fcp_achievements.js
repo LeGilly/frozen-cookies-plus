@@ -144,35 +144,57 @@ FCP.patchAscend = function () {
 // ---------------------------------------------------------------------------
 // Elder Pledge / Covenant achievements
 // ---------------------------------------------------------------------------
+// Elder Pledges: Elder nap (1), Elder slumber (5 in one run), Elder calm (the Covenant), and
+// Sacrificial rolling pins, an upgrade unlocked by 10 pledges in one run (cleared at ascension,
+// so it is redone every run). A pledge lasts 30 minutes, but buying the Covenant ends it and
+// revoking the Covenant makes the Pledge available again on the next frame (Elder Pact, no
+// pledge running: Game.UpdateGrandmapocalypse). So FC+ cycles Pledge, Covenant, Revoke: one
+// pledge every few seconds, for 8^(pledges+2) + 66.7 trillion + 6.7 billion cookies.
+// A pledge and the Covenant collect every wrinkler, so it waits while one is being poked, or
+// while a shiny one is kept (Shiny pop).
+FCP.PLEDGE_GOAL = 10;
+
+FCP.pledgesWanted = function () {
+    return !FCP.has("Elder slumber") || !FCP.has("Elder calm") || (Game.pledges < FCP.PLEDGE_GOAL && !Game.Has("Sacrificial rolling pins") && !(Game.Upgrades["Sacrificial rolling pins"] || {}).unlocked);
+};
+
 FCP.elderTick = function () {
-    if (FCP.busy()) return;
-    var buy = function (name) {
+    if (FCP.busy() || Game.ascensionMode == 1) return;
+    var buy = function (name, why) {
         var u = Game.Upgrades[name];
         if (u && u.unlocked && !u.bought && FCP.canSpend(u.getPrice())) {
             u.buy(1);
-            FCP.log("Bought " + name + " for its achievement.");
+            FCP.log("Bought " + name + (why ? " " + why : "") + ".");
             return true;
         }
         return false;
     };
+    var covenant = Game.Upgrades["Elder Covenant"];
+    if (!FCP.pledgesWanted()) {
+        // Done: undo the Covenant's -5% CpS if it was left on.
+        if (covenant && covenant.bought) buy("Revoke Elder Covenant", "(pledges done)");
+        FCP.status["Elder Pledges"] = "";
+        return;
+    }
     // The pledges only unlock with Elder Pact, the last research. FC never buys it on its own (it
     // turns every golden cookie into a wrath cookie, so it scores as no gain).
-    if ((!FCP.has("Elder slumber") || !FCP.has("Elder calm")) && !Game.Has("Elder Pact")) {
-        buy("Elder Pact");
+    if (!Game.Has("Elder Pact")) {
+        buy("Elder Pact", "(the Elder Pledge needs it)");
         return;
     }
-    if (!FCP.has("Elder slumber")) {
-        // Only one pledge can run at a time; the upgrade relocks while active.
-        if (Game.pledgeT <= 0) buy("Elder Pledge");
+    var shinyKept = FrozenCookies.shinyPop == 1 && Game.wrinklers.some(function (w) { return w.type == 1 && w.phase > 0; });
+    if ((FrozenCookies.achievementHunter && FCP.pokeTarget && FCP.pokeTarget()) || shinyKept) {
+        FCP.status["Elder Pledges"] = "pledges " + Game.pledges + "/" + FCP.PLEDGE_GOAL + " · waiting: a pledge pops every wrinkler";
         return;
     }
-    if (!FCP.has("Elder calm")) {
-        buy("Elder Covenant");
+    // One cycle per tick: Revoke (if left on), Pledge, Covenant. The Pledge comes back next frame.
+    if (covenant && covenant.bought) {
+        buy("Revoke Elder Covenant", "(to pledge again)");
         return;
     }
-    // Achievement done: undo the covenant's -5% CpS.
-    if (Game.Upgrades["Elder Covenant"] && Game.Upgrades["Elder Covenant"].bought)
-        buy("Revoke Elder Covenant");
+    if (Game.pledgeT <= 0 || Game.Upgrades["Elder Pledge"].unlocked) buy("Elder Pledge", "(" + (Game.pledges + 1) + "/" + FCP.PLEDGE_GOAL + ")");
+    if (Game.Upgrades["Elder Pledge"].bought && covenant && covenant.unlocked && !covenant.bought) buy("Elder Covenant", "(ends the pledge, so the next one comes sooner)");
+    FCP.status["Elder Pledges"] = "pledges " + Game.pledges + "/" + FCP.PLEDGE_GOAL + " (Sacrificial rolling pins) · cycling Pledge, Covenant, Revoke";
 };
 
 // ---------------------------------------------------------------------------
@@ -462,4 +484,4 @@ FCP.addTask("hunter", function () { return !!FrozenCookies.achievementHunter; },
 FCP.addTask("poke", function () { return !!FrozenCookies.achievementHunter && !FCP.has("Wrinkler poker"); }, FCP.pokeWrinkler, 700);
 FCP.addTask("challenge", function () { return !!FrozenCookies.challengeRuns; }, FCP.challengeTick, 2000);
 FCP.addTask("speedclick", function () { return !!FrozenCookies.challengeRuns; }, FCP.speedClick, 20);
-FCP.addTask("elder", function () { return !!FrozenCookies.elderPledgeAchievs; }, FCP.elderTick, 5000);
+FCP.addTask("elder", function () { return !!FrozenCookies.elderPledgeAchievs; }, FCP.elderTick, 2000);

@@ -50,13 +50,20 @@ test("Elder Pact is bought once researched, then the first pledge", async ({ pag
   noErrors(errors);
 });
 
-test("Elder Covenant is bought for Elder calm and then revoked", async ({ page }) => {
+test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Covenant is left off", async ({ page }) => {
+  test.setTimeout(120_000);
   const errors = await loadGame(page);
   await richGame(page, { buildings: 100 });
-  await page.evaluate(() => { Game.Upgrades["Elder Pact"].earn(); Game.pledges = 5; Game.Win("Elder slumber"); Game.pledgeT = 0; Game.Unlock("Elder Covenant"); });
+  await page.evaluate(() => Game.Upgrades["Elder Pact"].earn());
   await setOptions(page, { elderPledgeAchievs: 1 });
-  await expect.poll(() => won(page, "Elder calm"), { timeout: 20_000 }).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => Game.pledges), { timeout: 80_000 }).toBeGreaterThanOrEqual(10);
+  expect(await won(page, "Elder slumber")).toBeTruthy();
+  expect(await won(page, "Elder calm")).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => !!Game.Upgrades["Sacrificial rolling pins"].unlocked), { timeout: 10_000 }).toBe(true);
   await expect.poll(() => page.evaluate(() => !Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);
+  const pledges = await page.evaluate(() => Game.pledges);
+  await page.waitForTimeout(5000);
+  expect(await page.evaluate(() => Game.pledges)).toBe(pledges); // stops once done
   noErrors(errors);
 });
 

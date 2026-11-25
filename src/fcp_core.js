@@ -42,7 +42,7 @@ FCP.preferenceValues = {
         default: 0,
     },
     elderPledgeAchievs: {
-        hint: "Buy Elder Pledge 5 times and the Elder Covenant once (then revoke it) for their achievements. Pauses wrinklers for a while.",
+        hint: "Buys Elder Pact once researched, then pledges 10 times in each run (Elder nap, Elder slumber, Elder calm, and the Sacrificial rolling pins upgrade) by cycling Elder Pledge, Elder Covenant and Revoke: buying the Covenant ends the pledge and revoking it brings the Pledge back, so it takes under a minute instead of 5 hours. Each pledge pops the wrinklers, so it waits while one is being poked.",
         display: ["Elder Pledge achievements OFF", "Elder Pledge achievements ON"],
         default: 0,
     },
