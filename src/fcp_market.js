@@ -2,8 +2,10 @@
 // Every good drifts around a resting value (10 + 10*id + bank level - 1).
 // Buy when the price is well under it and not crashing, sell when it is
 // well over it, above what we paid (fees included) and not still climbing fast.
-// Brokers are hired first: each one costs 20 minutes of raw production (a tiny
-// share of real income) and cuts the 20% buying fee by 5%.
+// Brokers: each costs 20 minutes of the highest raw production ($1,200 in market dollars) and
+// cuts the fee by 5% of itself, about 1% of what is bought. One only pays for itself once that
+// much stock has been bought ($120,000 for the first), so the next broker is hired once FC+'s
+// stock purchases so far would have paid for it.
 // Modes: 0 stable, 1 slow rise, 2 slow fall, 3 fast rise, 4 fast fall, 5 chaotic.
 
 FCP.stockBuyRatio = 0.7;
@@ -20,9 +22,25 @@ FCP.stockPaid = function (id, value) {
     try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
 };
 
+// Market dollars of stock FC+ has bought (kept in localStorage).
+FCP.stockVolume = function (add) {
+    var key = "fcpStockVolume", v = 0;
+    try { v = parseFloat(localStorage.getItem(key)) || 0; } catch (e) {}
+    if (add) {
+        v += add;
+        try { localStorage.setItem(key, String(v)); } catch (e) {}
+    }
+    return v;
+};
+// Would the next broker have paid for itself over the purchases made so far?
+FCP.brokerWorth = function (B) {
+    var saves = 0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05; // share of each purchase it saves
+    return FCP.stockVolume() * saves >= 1200;
+};
+
 FCP.hireBrokers = function (B) {
     var hired = 0;
-    while (B.brokers < B.getMaxBrokers() && FCP.canSpend(B.getBrokerPrice()) && Game.cookies >= B.getBrokerPrice() && hired < 50) {
+    while (B.brokers < B.getMaxBrokers() && FCP.brokerWorth(B) && FCP.canSpend(B.getBrokerPrice()) && Game.cookies >= B.getBrokerPrice() && hired < 50) {
         Game.Spend(B.getBrokerPrice());
         B.brokers += 1;
         hired++;
@@ -70,6 +88,7 @@ FCP.stockTick = function () {
             var unit = Game.cookiesPsRawHighest * val * overhead;
             var n = unit > 0 ? Math.min(room, Math.floor(budget / unit)) : 0;
             if (n > 0 && B.buyGood(it.id, n)) {
+                FCP.stockVolume(val * n);
                 // Average cost per unit, fees included, over what is held now.
                 var before = it.stock - n, old = FCP.stockPaid(it.id) || val * overhead;
                 FCP.stockPaid(it.id, (old * before + val * overhead * n) / it.stock);
@@ -80,7 +99,9 @@ FCP.stockTick = function () {
         if (it.stock > 0) held++;
     }
     FCP.status["Stock market"] =
-        held + " good" + (held == 1 ? "" : "s") + " held · total profit $" + Beautify(B.profit);
+        held + " good" + (held == 1 ? "" : "s") + " held · total profit $" + Beautify(B.profit) +
+        " · fee " + (20 * Math.pow(0.95, B.brokers)).toFixed(1) + "%" +
+        (B.brokers < B.getMaxBrokers() ? (FCP.brokerWorth(B) ? " · hiring a broker when the cookies are there" : " · next broker once $" + Beautify(Math.ceil(1200 / (0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05))) + " of stock is bought ($" + Beautify(FCP.stockVolume()) + " so far)") : "");
 };
 
 FCP.addTask("stocks", function () { return !!FrozenCookies.autoStocks; }, FCP.stockTick, 5000);

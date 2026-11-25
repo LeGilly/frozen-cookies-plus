@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.11.2 · 2026-11-25
+- Stock market: brokers are only hired once they pay for themselves. A broker costs 20 minutes of the highest raw production ($1,200 in market dollars) and saves about 1% of each purchase, so the first one only pays off after $120,000 of stock has been bought. 1.11.1 hired them whenever they fitted above the bank. The infobox shows the current fee and how much stock the next broker waits for
+
 ## 1.11.1 · 2026-11-25
 - Stock market: FC+ hires brokers before trading, whenever one fits above the golden cookie bank (each costs 20 minutes of raw production and cuts the 20% buying fee by 5%; FC's own hiring only ran when its next purchase was a building, so it rarely did)
 - Stock market: a good is only sold for at least 5% more than it cost with fees. Before, the 5% was counted on the price before fees, so a "profitable" sale could lose up to 15% to the fee

@@ -47,6 +47,29 @@ test("the stock bot buys a cheap good and sells it when the price is high", asyn
   noErrors(errors);
 });
 
+test("brokers are only hired once enough stock has been bought for them to pay off", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page);
+  await page.evaluate(() => { Game.Objects.Bank.level = Math.max(1, Game.Objects.Bank.level); Game.LoadMinigames(); localStorage.removeItem("fcpStockVolume"); });
+  await page.waitForFunction(() => Game.Objects.Bank.minigame && Game.Objects.Bank.minigame.goodsById);
+  await page.evaluate(() => {
+    const B = Game.Objects.Bank.minigame;
+    B.tick = () => {};
+    B.goodsById.forEach((g) => { g.val = B.getRestingVal(g.id); g.mode = 0; });
+    Game.cookies = B.getBrokerPrice() * 1000;
+    const g = B.goodsById[0]; g.val = 2; g.last = 0;
+  });
+  await setOptions(page, { autoStocks: 1 });
+  // Stock is bought with the fee, but a few dollars of purchases don't justify a broker.
+  await expect.poll(() => page.evaluate(() => Game.Objects.Bank.minigame.goodsById[0].stock), { timeout: 15_000 }).toBeGreaterThan(0);
+  expect(await page.evaluate(() => Game.Objects.Bank.minigame.brokers)).toBe(0);
+  expect(await page.evaluate(() => FCP.status["Stock market"])).toMatch(/fee 20\.0% · next broker once \$120,000 of stock is bought/);
+  // After $120,000 of purchases, the first broker pays for itself: hired.
+  await page.evaluate(() => FCP.stockVolume(120000));
+  await expect.poll(() => page.evaluate(() => Game.Objects.Bank.minigame.brokers), { timeout: 15_000 }).toBeGreaterThan(0);
+  noErrors(errors);
+});
+
 test("the stock bot hires brokers, and never sells for less than it paid with fees", async ({ page }) => {
   const errors = await loadGame(page);
   await richGame(page);
@@ -57,6 +80,7 @@ test("the stock bot hires brokers, and never sells for less than it paid with fe
     B.tick = () => {}; // prices only move when the test moves them
     B.goodsById.forEach((g) => { g.val = B.getRestingVal(g.id); g.mode = 0; }); // nothing cheap to buy yet
     Game.cookies = B.getBrokerPrice() * 1000;
+    localStorage.setItem("fcpStockVolume", "1e12"); // plenty bought: every broker pays off
     return B.getMaxBrokers();
   });
   await setOptions(page, { autoStocks: 1 });
