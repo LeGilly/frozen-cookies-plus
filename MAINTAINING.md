@@ -7,6 +7,43 @@
 > Unlike the other projects this is **not a website**: it's a local mod for Cookie Clicker on Steam, so the
 > legilly.com site rules (content security policy, shared bar and themes, GitHub Pages) don't apply.
 
+Also read: [`docs/GAME_NOTES.md`](docs/GAME_NOTES.md) (game and FC mechanics verified in the code, with
+the surprises found so far) and [`TODO.md`](TODO.md) (where work stands and what comes next).
+[`docs/HUB_BRIEF.md`](docs/HUB_BRIEF.md) describes the project for its listing on the hub.
+
+## How the owner works on FC+
+
+- **Local only, not on the Steam Workshop.** The owner plays with it on Steam and reports what he sees,
+  usually with a screenshot of the infobox, the store or a tooltip. Read the screenshot carefully before
+  answering: most reports are "does this look right?", and the answer can be a bug nobody asked about.
+- **Folder:** his local clone under `Documents\GitHub\frozen-cookies-plus` (he gives the full path in the discussion). He commits and pushes himself with
+  GitHub Desktop; never commit or push for him. Write the changed files into that folder, then **read them
+  back and diff** against what you meant to write (an earlier session wrote stale copies when reusing the
+  same staging path; use a fresh output folder per batch).
+- **Every change he will commit is a new version:** bump `version` in `frozen_cookies.js`, add a
+  `CHANGELOG.md` entry (a test checks they match), update `README.md` when an option or behaviour changes,
+  run the whole suite, then give him a one-line commit summary (`1.12.5: …`). He says "committed" or
+  "pushed"; once a version is pushed, further changes go into the next version, not into it. If he hasn't
+  committed yet, follow-up fixes can go into the same version.
+- **Questions first, then changes:** he often asks "why does it do X?" or "is it worth it?" before deciding.
+  Answer from the game code (`.game/main.js` and the minigame files), not from memory: several of his
+  assumptions and several of ours turned out wrong (see GAME_NOTES.md). Say what you checked. For bigger
+  or debatable changes, explain the options with numbers and wait for his go; for clear bugs, fix them.
+  "Plan mode only" means: no code.
+- **His preferences for the bot's behaviour** (consistent over many sessions):
+  - Replicate the in-game rules even where the code would allow more (e.g. only level a building you own).
+  - Patience beats waste for rare resources: wait for the right sugar lump target, let a nearly finished
+    goal finish (hold extension), don't cut a run short of a one-time goal.
+  - He wants **every achievement and every upgrade** eventually (a complete save), so one-time goals that
+    only count within a run deserve a hold before ascending.
+  - Performance matters when income bursts (burst buying uses x10/x100).
+  - Everything FC+ does should be visible in the infobox, briefly: he asked for shorter lines rather than
+    collapsible sections.
+  - Options are switched on by **Apply recommended options** (a button, not a toggle); new options default
+    to off and Recommended turns them on.
+- **Long-running work** (benchmarks) needs an estimate before starting; he may stop it ("stop here").
+- He sometimes writes a quick note for later: put it in `TODO.md` (in his folder) so the next session sees it.
+
 ## Layout
 
 | Path | What it is |
@@ -14,13 +51,15 @@
 | `frozen_cookies.js` | Loader: version (`version`), game versions (`steamGameVersion`, `lastCompatibleVersion`), file load order |
 | `src/fc_*.js`, `src/cc_upgrade_prerequisites.js` | Upstream Frozen Cookies (erbkaiser's fork, erb-2.052.8), **unmodified** |
 | `src/fcp_core.js` | Plus: new options in the FC menu, scheduler (wraps `FCStart`), helpers, achievement tracker in the menu |
-| `src/fcp_achievements.js` | Achievement Hunter, Elder Pledge, challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
+| `src/fcp_achievements.js` | Achievement Hunter (wrinkler poking every 700 ms, protected from FC's popping), Elder Pledge (buys Elder Pact, then 10 pledges a run by cycling Pledge → Covenant → Revoke), challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
 | `src/fcp_bankrules.js` | Bank rules: wraps `autoGSBuy`, `autoGodzamokAction`, `autoEasterAction`, `autoHalloweenAction`, `buyOtherUpgrades` (with `Game.Upgrade.prototype.buy`) and `isRewardCookie`. Loaded before fcp_bankwatch.js so the bank watcher sees the wrapped versions |
 | `src/fcp_dragon.js` | Smart dragon auras: tries each pair of known auras with `Game.CalculateGains()` (with `Game.Win` stubbed so nothing is won from a pair not worn), switches by setting `Game.dragonAura`/`dragonAura2` and sacrificing one top building, as the game's confirm button does, without opening the prompt. Wraps `Game.UpgradeDragon` to close the dragon menu it opens when it was closed before, and FC's `autoDragonAura0Action`/`autoDragonAura1Action` |
-| `src/fcp_ascend.js` | Smart ascension: when to ascend, `FCP.autoAscend(why)` (every ascension FC+ makes goes through it), the heavenly upgrade buyer (`FCP.heavenlyPriority`, wraps `Game.Reincarnate`), and the autoCookie wrapper that sets FC's own auto-ascend aside |
+| `src/fcp_ascend.js` | Smart ascension: when to ascend (440 levels the first time, then when prestige doubles), one-time goal holds (`FCP.ascendHolds`: research to Elder Pact, pledges, a new garden seed, 200 reindeer, Santa; at most 8 h, +2 h for a goal nearly done, `FCP.holdLeft`), the boot guard (`FCP.gameSettled`: minigames loaded and 15 s after start), `FCP.autoAscend(why)` (every ascension FC+ makes goes through it), the heavenly upgrade buyer (`FCP.heavenlyPriority`, wraps `Game.Reincarnate`), permanent upgrade slots (scored by effect × lateness), and the autoCookie wrapper that sets FC's own auto-ascend aside |
 | `src/fcp_bankwatch.js` | Why the golden cookie bank is below full. Wraps `Game.Spend`, `Game.Upgrade.prototype.buy`, each building's `buy`, `Game.storeBuyAll`, `Game.UpgradeSanta`, `Game.UpgradeDragon`, `autoCookie` and FC's actions that skip the bank (`autoGSBuy`, `buyOtherUpgrades`, season, dragon, bank office, Godzamok, reward cookies) to note what was bought and by whom. `FCP.addTask` files a task's spending under "FC+ (name)" |
 | `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
-| `src/fcp_lumps.js`, `src/fcp_market.js`, `src/fcp_garden.js` | Sugar lumps, stock trading, garden breeder (recipes mirror the game's `M.getMuts`) |
+| `src/fcp_lumps.js` | Sugar lumps: minigames first (needs the building owned), then level targets (Farm, Bank, Wizard tower, Temple, then costliest down, Cursor 12 last), then best CpS per lump once every building is owned |
+| `src/fcp_market.js` | Stock trading: buys low, sells only above what was paid with fees (`FCP.stockPaid`), hires brokers when this run's volume pays for them (`FCP.brokerWorth`), stops buying and takes any profit within 2 hours of a smart ascension (`FCP.ascensionSoon`), since the market is wiped at ascension |
+| `src/fcp_garden.js` | Garden breeder (recipes mirror the game's `M.getMuts`), harvest farming, the sacrifice. Rebuilds the plot from scratch every tick, so an emptied plot (ascension) needs nothing special |
 | `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`). Burst buying: more units and up to 10 extra purchases per autoCookie round when the spare cookies cover the next purchase 10 times |
 | `src/fcp_upgrades.js` | Upgrade tracker: upgrades the run is missing for the game's "Upgrades unlocked" stat, grouped by where they come from (`FCP.upgradeSource`), shown in the FC menu and summed up in the infobox. Read-only |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`). Research chain scoring wraps `upgradeStats`: chain upgrades are scored with the next research (toggled with `upgradeToggle` and put back) |
@@ -34,6 +73,9 @@
 | `tests/`, `package.json`, `playwright.config.mjs`, `.github/workflows/tests.yml` | The tests |
 | `.github/workflows/release.yml` | Publishes the GitHub Release with the zip |
 | `docs/UPSTREAM_README.md` | erbkaiser's README: what every upstream FC option does |
+| `docs/GAME_NOTES.md` | Game and FC mechanics verified in the code |
+| `docs/HUB_BRIEF.md` | What to say about FC+ on the hub (legilly.com) |
+| `TODO.md` | Where work stands and the next steps |
 
 `Steam/`, `dist/` and `.game/` are build output and ignored by git.
 
@@ -51,6 +93,24 @@
 - Spend cookies only through `FCP.canSpend(cost)` / `FCP.spare()`, so nothing eats FC's golden cookie bank.
 - What a module is doing goes in `FCP.status["Name"]`; the infobox and the menu tracker show it.
 - The mod never downloads code: everything is inlined by the build. Keep it that way.
+- Per-run data in `localStorage` is keyed by `Game.startDate` (a new run starts fresh): `fcpAscendHold`,
+  `fcpStockPaid`, `fcpStockVolume`. Others: `fcpChallengeRun`, `fcpGift`.
+- **Two bots, one game:** FC and FC+ act on the same things. Before adding behaviour, check what FC already
+  does with it (it pops wrinklers, buys pledges, switches seasons, casts spells, buys dragon levels…) and
+  wrap FC's function so they don't fight (examples: `shouldPopWrinklers` leaves the poked wrinkler,
+  FC's aura actions are blocked under smart auras, FC's auto-ascend is set aside under smart ascension).
+- **FC's ratings miss things it doesn't model.** It scores Elder Pact as "no gain" (so never buys it),
+  pledges whenever golden cookies beat wrath cookies (no wrinkler income in its model), and ignores
+  achievements and completion. FC+ steps in where a goal needs it; leave income decisions to FC unless a
+  benchmark says otherwise.
+- **The game resets a lot at ascension** (see GAME_NOTES.md): any per-run goal needs a hold or must finish
+  before ascending, and any state FC+ keeps must be per run.
+- **At boot, minigames load after the save.** Anything that reads a minigame must cope with it missing
+  (`minigameLoaded`), and nothing irreversible should happen in the first seconds.
+- Infobox lines: short, with `FCP.shortTime(sec)` for durations (two biggest units: "5h 33m").
+  Details belong in the README, the option hint or the FC menu tracker.
+- A UI the game opens by itself (dragon menu, permanent slot prompt) must be closed again or never opened:
+  the owner noticed every time.
 
 ## Releasing
 
@@ -71,11 +131,12 @@ How tests run (GitHub, locally, keeping them current) is in the hub's `MAINTAINI
 mirrored at github.com/ozh/cookieclicker, commit `b843fa7` = web 2.052, the same content as Steam 2.053),
 then loads the built bundle into it with Electron-like `module`/`exports` globals, as on Steam.
 
-- `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks, the menu tracker and saving.
-- `hunter.spec.mjs`: unripe lump, wrinkler poking, Covenant, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
+- `smoke.spec.mjs`: libraries, one-click achievements, sugar lumps, stocks (fees, brokers, near-ascension selling, per-run records), the Pantheon and garden after an ascension's reset, the Recommended button (Christmas resting season), the menu tracker and saving.
+- `scoring.spec.mjs`: first-run scoring and research chain scoring.
+- `hunter.spec.mjs`: unripe lump, wrinkler poking (and FC leaving the poked one alone), Elder Pact then 10 pledges via the Covenant cycle, the loan before ascending, the Neverclick and Speed baking Born Again runs, and leaving a player's own Born Again run alone.
 - `lumps.spec.mjs`: the lump plan early in a run (buildings not bought yet) and the target order.
 - `dragon.spec.mjs`: dragon training timing, the best known aura, the second slot at the top level, no switching back and forth, off leaves auras alone.
-- `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount.
+- `ascend.spec.mjs`: the heavenly upgrade list and buyer, the first and doubling ascensions, manual ascensions left alone, FC's doubling mode without a chips amount, goal holds (8 h, +2 h for a goal nearly done, research only with Persistent memory, a new garden seed), the boot guard, permanent upgrade slots.
 - `upgrades.spec.mjs`: every missing upgrade gets a source and the totals match the game's stats; the menu list and the infobox line.
 - `bankrules.spec.mjs`: the Golden switch and Godzamok worth checks, extra upgrades waiting for the bank, reward cookies.
 - `bankwatch.spec.mjs`: each reason the bank is below full.
@@ -88,6 +149,13 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 - `version.spec.mjs`: version, changelog and info.txt agree.
 
 The tests can't run the Steam app itself; after a release, check once in the game.
+
+Run locally: `rm -rf Steam dist; CI=1 CHROME_PATH=/usr/bin/google-chrome npm test -- --workers=2` (about 4 minutes,
+77 tests at 1.12.5). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
+(`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay. Tests that
+wait on FC's intervals can be slow when the whole suite runs at once: give them generous poll timeouts.
+For a one-off check of the game's data, a throwaway `tests/zz_*.spec.mjs` that logs with `console.log` works well
+(delete it afterwards).
 
 ## Benchmark (changing how FC chooses purchases)
 
@@ -125,6 +193,11 @@ starts mid-run with 10 million prestige, the minigames (Wizard towers at level 1
 actions (spells, Pantheon, Godzamok, Golden switch, FC+ tasks) in virtual time. One game hour takes about 25 s. Not usable
 for results yet: golden cookies come far too rarely (their timers are set in frames before the benchmark lowers the frame
 rate), and some runs hung for over 10 minutes for a reason not found yet. `--walllimit=N` stops a run after N real seconds.
+
+Open benchmark questions (also in TODO.md): Christmas vs Business Day as the resting season (1.12.2 chose
+Christmas from the numbers in GAME_NOTES.md, not measured); wrinklers (FC pledging as now vs never pledging,
+with FC's popping or popping only at ascension); combos (Sugar frenzy timing, aura swaps for Force the Hand of
+Fate). The benchmark must be repaired first.
 
 ## Updating
 
