@@ -105,3 +105,32 @@ test("research is only waited for once Persistent memory makes it quick", async 
   expect(holds.withPM.some((l) => /^research \(10 steps to Elder Pact, about 30m\)$/.test(l))).toBe(true);
   noErrors(errors);
 });
+
+test("a permanent upgrade slot bought on the ascension screen is filled, and its prompt closed", async ({ page }) => {
+  const errors = await loadGame(page);
+  await setOptions(page, { smartAscend: 1 });
+  const r = await page.evaluate(() => {
+    // Last run: lots of achievements (milk), late kittens and expensive flavored cookies.
+    Game.Earn(1e40);
+    Game.ObjectsById.forEach((o) => { o.amount = 100; o.bought = 100; }); // something to produce
+    Object.values(Game.AchievementsById).slice(0, 300).forEach((a) => { a.won = 1; });
+    Game.AchievementsOwned = 300;
+    ["Kitten helpers", "Kitten workers", "Kitten engineers", "Kitten overseers", "Kitten managers", "Kitten accountants",
+      "Plastic mouse", "Reinforced index finger"].forEach((n) => Game.Upgrades[n].earn());
+    const cookies = Object.values(Game.UpgradesById).filter((u) => u.pool === "cookie" && u.getPrice() > 1e30 && u.getPrice() < 1e40).slice(0, 5);
+    cookies.forEach((u) => u.earn());
+    ["Legacy", "Heavenly cookies", "How to bake your dragon", "Tin of british tea biscuits", "Box of macarons", "Box of brand biscuits",
+      "Tin of butter cookies", "Starter kit", "Heavenly luck", "Persistent memory", "Heralds", "Season switcher", "Lasting fortune", "Lucky digit",
+      "Golden switch"].forEach((n) => Game.Upgrades[n].earn());
+    Game.heavenlyChips = 1e6; // plenty: Permanent upgrade slot I (100) among others
+    FCP.buyHeavenly();
+    const top = FCP.permanentScores()[0];
+    return { slot: !!Game.Has("Permanent upgrade slot I"), perm: Game.UpgradesById[Game.permanentUpgrades[0]].name, top: top.u.name, prompt: !!Game.promptOn };
+  });
+  expect(r.slot).toBe(true);
+  expect(r.prompt).toBe(false);
+  // A late kitten, not an expensive flavored cookie or an early kitten.
+  expect(r.perm).toBe(r.top);
+  expect(r.perm).toMatch(/^Kitten (accountants|managers)$/);
+  noErrors(errors);
+});

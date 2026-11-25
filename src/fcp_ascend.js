@@ -87,11 +87,78 @@ FCP.buyHeavenly = function () {
         if (saving !== null && cost > saving * 0.01) return;
         buyPlan(plan);
     });
+    // Buying a permanent upgrade slot opens the game's "pick an upgrade" prompt: close it, the
+    // slots are filled below.
+    if (Game.promptOn) Game.ClosePrompt();
+    FCP.fillPermanentSlots();
     if (bought.length) {
         FCP.log("Heavenly upgrades bought: " + bought.join(", ") + ".", true);
         if (Game.BuildAscendTree) Game.BuildAscendTree();
     }
     return bought;
+};
+
+// Permanent upgrade slots: each owned slot gets one of last run's upgrades, owned from the start
+// of every run. A slot is worth what the upgrade adds times how much sooner you have it, so:
+//  - effect: production lost when the upgrade alone is removed (last run's state, still in place
+//    on the ascension screen; clicking counted at the measured speed);
+//  - lateness: how late in a run it normally comes, from its price against everything baked in
+//    the run (on a log scale: cookies baked grow roughly exponentially); upgrades that need a
+//    season or Santa's levels count as late whatever their price.
+// Late kitten upgrades come out on top (milk comes from achievements, kept across ascensions, so
+// they work fully from the start), then Santa's dominion. Same choices as the game's prompt
+// (regular and cookie upgrades bought last run), reassigned at every ascension FC+ makes.
+FCP.permanentLateness = function (u) {
+    var gated = (Game.santaDrops || []).concat(["Santa's dominion"]).indexOf(u.name) !== -1;
+    if (!gated && typeof holidayCookies !== "undefined")
+        gated = Object.keys(holidayCookies).some(function (k) { return holidayCookies[k].indexOf(u.id) !== -1; });
+    if (gated) return 1;
+    var baked = Math.max(10, Game.cookiesEarned);
+    return Math.max(0, Math.min(1, Math.log(Math.max(1, u.getPrice())) / Math.log(baked)));
+};
+
+FCP.permanentScores = function () {
+    var list = Object.keys(Game.Upgrades).map(function (k) { return Game.Upgrades[k]; }).filter(function (u) {
+        return u.bought && u.unlocked && !u.noPerm && (u.pool === "" || u.pool === "cookie");
+    });
+    var clicks = FCP.realClickRate ? FCP.realClickRate() : 0;
+    var value = function () { return Game.cookiesPs + clicks * Game.computedMouseCps; };
+    var win = Game.Win, scores = [];
+    Game.Win = function () {};
+    try {
+        Game.CalculateGains();
+        var base = value();
+        list.forEach(function (u) {
+            var late = FCP.permanentLateness(u);
+            if (late < 0.3) return; // bought early in any run: a slot gains next to nothing
+            u.bought = 0;
+            Game.CalculateGains();
+            var effect = base > 0 ? 1 - value() / base : 0;
+            u.bought = 1;
+            scores.push({ u: u, effect: effect, late: late, score: effect * late });
+        });
+    } finally {
+        Game.Win = win;
+        Game.CalculateGains();
+    }
+    return scores.filter(function (x) { return x.score > 0; }).sort(function (a, b) { return b.score - a.score; });
+};
+
+FCP.fillPermanentSlots = function () {
+    var slots = ["Permanent upgrade slot I", "Permanent upgrade slot II", "Permanent upgrade slot III",
+        "Permanent upgrade slot IV", "Permanent upgrade slot V"];
+    var owned = slots.map(function (n, i) { return Game.Has(n) ? i : -1; }).filter(function (i) { return i >= 0; });
+    if (!owned.length) return [];
+    var best = FCP.permanentScores();
+    var chosen = [];
+    owned.forEach(function (slot, k) {
+        var x = best[k];
+        if (!x) return;
+        Game.permanentUpgrades[slot] = x.u.id;
+        chosen.push((x.u.dname || x.u.name) + " (+" + Math.round(x.effect * 100) + "%)");
+    });
+    if (chosen.length) FCP.log("Permanent upgrade slots: " + chosen.join(", ") + ".", true);
+    return chosen;
 };
 
 // Ascend on FC+'s behalf, so the heavenly upgrades are bought before reincarnating.

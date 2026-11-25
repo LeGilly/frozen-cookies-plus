@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.11.3 · 2026-11-25
+- Permanent upgrade slots: buying one on the ascension screen opened the game's "Pick an upgrade to make permanent" prompt, which then sat there. FC+ now closes it and fills every owned slot with last run's upgrades worth the most there: each is scored by the production it adds (measured by removing it alone) times how late in a run it normally comes (from its price against everything baked in the run; season and Santa upgrades count as late). Late kitten upgrades come first (milk comes from achievements, so they work fully from the start), then Santa's dominion; expensive flavored cookies only add about 5% each. Reassigned at every ascension FC+ makes
+
 ## 1.11.2 · 2026-11-25
 - Stock market: brokers are only hired once they pay for themselves. A broker costs 20 minutes of the highest raw production ($1,200 in market dollars) and saves about 1% of each purchase, so the first one only pays off after $120,000 of stock has been bought. 1.11.1 hired them whenever they fitted above the bank. The infobox shows the current fee and how much stock the next broker waits for
 
