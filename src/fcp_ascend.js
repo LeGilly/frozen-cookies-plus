@@ -18,7 +18,7 @@ FCP.FIRST_ASCEND_LEVELS = 440;
 FCP.heavenlyPriority = [
     "Legacy", "Heavenly cookies", "How to bake your dragon",
     "Tin of british tea biscuits", "Box of macarons", "Box of brand biscuits", "Tin of butter cookies",
-    "Starter kit", "Heavenly luck", "Season switcher", "Lasting fortune", "Lucky digit", "Persistent memory",
+    "Starter kit", "Heavenly luck", "Persistent memory", "Season switcher", "Lasting fortune", "Lucky digit",
     "Golden switch", "Kitten angels", "Starter kitchen", "Decisive fate",
     "Divine discount", "Divine sales", "Synergies Vol. I", "Lucky number", "Residual luck", "Divine bakeries",
     "Inspired checklist", "Halo gloves", "Unholy bait", "Elder spice", "Wrapping paper",
@@ -64,17 +64,18 @@ FCP.buyHeavenly = function () {
         });
         return true;
     };
-    // 1. The priority list, in order; the first one out of reach is saved for.
+    // 1. The priority list, in order. The first one out of reach is saved for; later ones on the
+    //    list costing at most half as much are still bought (chips grow every ascension, so they
+    //    delay it a little, while blocking them could hold a useful upgrade back for several runs).
     var saving = null;
     for (var i = 0; i < FCP.heavenlyPriority.length; i++) {
         var u = Game.Upgrades[FCP.heavenlyPriority[i]];
         if (!u || u.pool !== "prestige" || u.bought) continue;
         var plan = FCP.heavenlyPlan(u);
         if (hidden(plan)) continue;
-        if (!buyPlan(plan)) {
-            saving = FCP.planCost(plan);
-            break;
-        }
+        var cost = FCP.planCost(plan);
+        if (saving !== null && cost > saving * 0.5) continue;
+        if (!buyPlan(plan) && saving === null) saving = cost;
     }
     // 2. The rest, cheapest first; while saving, only what barely delays it (1% of its cost).
     var rest = Game.PrestigeUpgrades.filter(function (u) {
@@ -112,6 +113,57 @@ FCP.patchHeavenlyBuy = function () {
     patched.__fcpHeavenly = true;
     patched.__fcp = original.__fcp; // keep the challenge run wrapper recognised
     Game.Reincarnate = patched;
+};
+
+// --- One-time goals worth finishing before ascending ---------------------------------
+// They only count within one run (research, pledges, the reindeer count and Santa's level all
+// reset at every ascension), and prestige doubles quickly, so they could be cut short forever.
+// When the run is ready to ascend, it waits for the ones still in reach, once each (until the
+// achievement is won) and at most FCP.HOLD_HOURS per run.
+FCP.HOLD_HOURS = 8;
+FCP.researchSteps = function () {
+    return FCP.researchChain.concat(["Elder Pact"]).filter(function (n) { return Game.Upgrades[n] && !Game.Upgrades[n].bought; }).length;
+};
+FCP.ascendHolds = function () {
+    var holds = [], fps = Game.fps, eta = function (sec) { return sec > 0 ? ", about " + timeDisplay(Math.ceil(sec)) : ""; };
+    // Research up to Elder Pact: wrinklers (One mind) and the Elder Pledge come from it. Only with
+    // Persistent memory (research 10x as fast, about 30 minutes in all): without it, the 4.5 hours
+    // are better spent ascending, which pays for Persistent memory (500 chips) soon enough.
+    var needsElders = ["Elder nap", "Elder slumber", "Elder calm", "Wrinkler poker", "Wrinklesquisher", "Moistburster"].some(function (n) { return !FCP.has(n); });
+    var bingo = Game.Upgrades["Bingo center/Research facility"];
+    if (needsElders && Game.Has("Persistent memory") && !Game.Has("Elder Pact") && bingo && (bingo.unlocked || bingo.bought)) {
+        var steps = FCP.researchSteps(),
+            per = Game.baseResearchTime / 10;
+        holds.push({ label: "research (" + steps + " steps to Elder Pact" + eta((steps * per) / fps) + ")" });
+    }
+    // Elder Pledges (5 in one run), then the Covenant.
+    if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact")) {
+        if (!FCP.has("Elder slumber")) {
+            var dur = Game.getPledgeDuration ? Game.getPledgeDuration() : fps * 60 * 30;
+            holds.push({ label: "Elder slumber (pledges " + Game.pledges + "/5" + eta(((5 - Game.pledges) * dur) / fps) + ")" });
+        } else if (!FCP.has("Elder calm")) holds.push({ label: "Elder calm (covenant)" });
+    }
+    if (Game.season === "christmas") {
+        // 200 reindeer in one run.
+        if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) {
+            var r = Game.shimmerTypes.reindeer, avg = r && r.maxTime > r.minTime ? (r.minTime + 0.25 * (r.maxTime - r.minTime)) / fps : 0;
+            holds.push({ label: "Reindeer sleigher (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")" });
+        }
+        // Santa's final form.
+        if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < 14)
+            holds.push({ label: "All hail Santa (Santa " + Game.santaLevel + "/14)" });
+    }
+    return holds;
+};
+// When this run started waiting (kept through a reload of the game).
+FCP.holdSince = function () {
+    var key = "fcpAscendHold", run = String(Game.startDate), saved = null;
+    try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+    if (!saved || saved.run !== run) {
+        saved = { run: run, since: Date.now() };
+        try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+    }
+    return saved.since;
 };
 
 // --- When to ascend -----------------------------------------------------------
@@ -162,7 +214,18 @@ FCP.ascendTick = function () {
             (rate > 0 && left / rate < 6 * 3600 ? " · about " + timeDisplay(left / rate) : "");
         return;
     }
-    // Worth it: wait out a combo, pop the wrinklers, then go.
+    // Worth it, but first the one-time goals this run can still finish (at most 8 hours).
+    var holds = FCP.ascendHolds();
+    if (holds.length) {
+        var since = FCP.holdSince();
+        var left = FCP.HOLD_HOURS * 3600 - (Date.now() - since) / 1000;
+        if (left > 0) {
+            FCP.status["Ascension"] = "ready, waiting for " + holds.map(function (h) { return h.label; }).join(" · ") +
+                " · at most " + timeDisplay(Math.ceil(left)) + " more";
+            return;
+        }
+    }
+    // Wait out a combo, pop the wrinklers, then go.
     if (cpsBonus() > 1 || hasClickBuff()) {
         FCP.status["Ascension"] = "ready, waiting for the current buffs to end";
         return;

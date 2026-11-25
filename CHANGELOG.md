@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.11.0 · 2026-11-25
+- Heavenly upgrades: Persistent memory (research 10x as fast, 500 chips) now comes before Season switcher. While saving for an upgrade out of reach, later ones on the priority list costing at most half as much are still bought; before, everything waited (with 945 chips, Persistent memory waited for Season switcher's 1,211)
+- Smart ascension waits for one-time goals still in reach before ascending, at most 8 hours per run: research up to Elder Pact once you own Persistent memory (wrinklers and the Elder Pledge come from it; without it, the 4.5 hours are better spent ascending to buy it), 5 Elder Pledges and the Covenant, 200 reindeer and Santa's final form at Christmas. These only count within one run (research, pledges, the reindeer count and Santa's level reset at every ascension), and prestige doubled before they could finish. The infobox shows what it waits for and how long at most
+
 ## 1.10.1 · 2026-11-24
 - Infobox: when FC keeps no golden cookie bank (usually early in a run), the bank line says so and compares the two scores FC uses: how fast a Lucky! bank would pay for itself, against the next purchase. FC starts the bank once the bank's score is lower
 

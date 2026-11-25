@@ -61,3 +61,47 @@ test("with smart ascension off, FC's 'prestige doubled' mode works without a chi
   await expect.poll(() => page.evaluate(() => !!Game.AscendTimer || !!Game.OnAscend), { timeout: 15_000 }).toBe(true);
   noErrors(errors);
 });
+
+test("Persistent memory comes before Season switcher, and cheaper useful upgrades aren't blocked by saving", async ({ page }) => {
+  const errors = await loadGame(page);
+  await setOptions(page, { smartAscend: 1 });
+  const r = await page.evaluate(() => {
+    ["Legacy", "Heavenly cookies", "How to bake your dragon", "Tin of british tea biscuits", "Box of macarons", "Box of brand biscuits",
+      "Tin of butter cookies", "Starter kit", "Heavenly luck"].forEach((n) => Game.Upgrades[n].earn());
+    Game.heavenlyChips = 945; // your case: saving for Season switcher (1,211 with Heralds)
+    FCP.buyHeavenly();
+    return { pm: !!Game.Has("Persistent memory"), switcher: !!Game.Has("Season switcher"), chips: Game.heavenlyChips };
+  });
+  expect([r.pm, r.switcher]).toEqual([true, false]);
+  expect(r.chips).toBeGreaterThanOrEqual(400); // only a few very cheap extras besides (under 1% of the saving each)
+  noErrors(errors);
+});
+
+test("a run ready to ascend waits for one-time goals still in reach, at most 8 hours", async ({ page }) => {
+  test.setTimeout(150_000);
+  const errors = await loadGame(page);
+  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpAscendHold"); });
+  await setOptions(page, { smartAscend: 1, challengeRuns: 0, autoBuy: 0, autoReindeer: 0 });
+  await page.evaluate(() => { Game.season = "christmas"; Game.seasonT = Game.fps * 3600 * 24; Game.reindeerClicked = 10;
+    Game.Earn(Game.HowManyCookiesReset(250) - Game.cookiesReset); });
+  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready, waiting for Reindeer sleigher \(10\/200, about .+\) · at most 7h 59m/);
+  expect(await page.evaluate(() => Game.resets)).toBe(0);
+  // 8 hours later: it goes.
+  await page.evaluate(() => localStorage.setItem("fcpAscendHold", JSON.stringify({ run: String(Game.startDate), since: Date.now() - 8.1 * 3600e3 })));
+  await page.waitForFunction(() => Game.resets === 1, null, { timeout: 120_000 });
+  noErrors(errors);
+});
+
+test("research is only waited for once Persistent memory makes it quick", async ({ page }) => {
+  const errors = await loadGame(page);
+  const holds = await page.evaluate(() => {
+    Game.Unlock("Bingo center/Research facility");
+    const without = FCP.ascendHolds().map((h) => h.label);
+    Game.Upgrades["Persistent memory"].earn();
+    const withPM = FCP.ascendHolds().map((h) => h.label);
+    return { without, withPM };
+  });
+  expect(holds.without.some((l) => /^research/.test(l))).toBe(false);
+  expect(holds.withPM.some((l) => /^research \(10 steps to Elder Pact, about 30m\)$/.test(l))).toBe(true);
+  noErrors(errors);
+});
