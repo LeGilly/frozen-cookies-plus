@@ -27,6 +27,6 @@ test("the FC menu lists missing upgrades by source, and the infobox sums them up
   await expect(page.locator("#fcpAchievements")).toContainText(/Upgrades this run: \d+ \/ \d+ \(heavenly: \d+ \/ \d+\)/);
   await page.locator("#fcpAchievements a", { hasText: "Show missing upgrades" }).click();
   await expect(page.locator("#fcpAchievements")).toContainText("Kittens (milk)");
-  expect(await page.evaluate(() => FCP.upgradeSummary())).toMatch(/^\d+\/\d+ this run · heavenly \d+\/\d+ · missing: /);
+  expect(await page.evaluate(() => FCP.upgradeSummary())).toMatch(/^\d+\/\d+ · heavenly \d+\/\d+ · missing: /);
   noErrors(errors);
 });

@@ -154,11 +154,11 @@ FCP.dragonNext = function () {
     var r = { name: name, cost: cost, ready: !!it.cost(), worth: true, why: "" };
     if (lvl >= 5 && lvl < Game.dragonLevels.length - 3) {
         var o = Game.ObjectsById[lvl - 5];
-        if (o.amount < 100) r.why = "when you own 100 (have " + o.amount + ")";
+        if (o.amount < 100) r.why = "have " + o.amount + "/100";
         else {
             var rebuy = FCP.rebuyCost(o, 100);
             r.worth = rebuy <= income;
-            if (!r.worth) r.why = "waiting until buying them back costs under " + FCP.DRAGON_REBUY_MINUTES + " minutes of income (now " + timeDisplay(rebuy / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + ")";
+            if (!r.worth) r.why = "rebuying costs " + FCP.shortTime(rebuy / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + " of income (waits for <" + FCP.DRAGON_REBUY_MINUTES + "m)";
         }
     } else if (lvl >= Game.dragonLevels.length - 3) {
         var per = lvl === Game.dragonLevels.length - 3 ? 50 : 200, total = 0, short = null;
@@ -166,10 +166,10 @@ FCP.dragonNext = function () {
             if (b.amount < per && !short) short = b;
             total += FCP.rebuyCost(b, per);
         });
-        if (short) r.why = "when you own " + per + " of every building (" + short.name + ": " + short.amount + ")";
+        if (short) r.why = "needs " + per + " of each (" + short.name + ": " + short.amount + ")";
         else {
             r.worth = total <= income;
-            if (!r.worth) r.why = "waiting until buying them back costs under " + FCP.DRAGON_REBUY_MINUTES + " minutes of income (now " + timeDisplay(total / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + ")";
+            if (!r.worth) r.why = "rebuying costs " + FCP.shortTime(total / (income / (60 * FCP.DRAGON_REBUY_MINUTES))) + " of income (waits for <" + FCP.DRAGON_REBUY_MINUTES + "m)";
         }
     } else {
         var price = Math.pow(2, lvl) * 1e6;

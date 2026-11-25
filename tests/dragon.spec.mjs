@@ -65,7 +65,7 @@ test("dragon training waits until the buildings it takes are cheap to buy back, 
   const next = await page.evaluate(() => FCP.dragonNext());
   expect(next.name).toBe("Train Dragon Cursor");
   expect(next.worth).toBe(false);
-  expect(next.why).toMatch(/^waiting until buying them back costs under 10 minutes of income/);
+  expect(next.why).toMatch(/^rebuying costs .+ of income \(waits for <10m\)$/);
   await page.evaluate(() => autoDragonAction());
   expect(await page.evaluate(() => [Game.dragonLevel, Game.Objects.Cursor.amount])).toEqual([5, keep]);
   // With a real income, 100 cursors are nothing: it trains.

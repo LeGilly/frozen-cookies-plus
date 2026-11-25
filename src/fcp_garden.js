@@ -235,13 +235,12 @@ FCP.gardenTick = function () {
         }
     }
     var parents = target.recipe.p.length
-        ? " from " +
+        ? " (" +
           (target.recipe.p.length === 2 && target.recipe.p[0] === target.recipe.p[1]
               ? "2× " + G.plants[target.recipe.p[0]].name
-              : target.recipe.p.map(function (k) { return G.plants[k].name; }).join(" + "))
-        : " (letting weeds grow)";
-    FCP.status["Garden"] =
-        "breeding " + G.plants[target.key].name + parents + " · seeds " + G.plantsUnlockedN + "/" + G.plantsN + " (Keeper of the conservatory)";
+              : target.recipe.p.map(function (k) { return G.plants[k].name; }).join(" + ")) + ")"
+        : " (weeds)";
+    FCP.status["Garden"] = "breeding " + G.plants[target.key].name + parents + " · seeds " + G.plantsUnlockedN + "/" + G.plantsN;
 };
 
 FCP.gardenIdle = function (G, b) {
@@ -270,9 +269,9 @@ FCP.gardenIdle = function (G, b) {
     }
     var seeds =
         G.plantsUnlockedN >= G.plantsN
-            ? "all seeds unlocked"
-            : G.plantsUnlockedN + "/" + G.plantsN + " seeds, the rest need a bigger plot (Farm level)";
-    FCP.status["Garden"] = seeds + (counting ? ", farming harvests (" + G.harvestsTotal + "/1000)" : ", keeping the plot full");
+            ? "all seeds"
+            : "seeds " + G.plantsUnlockedN + "/" + G.plantsN + " (rest need Farm levels)";
+    FCP.status["Garden"] = seeds + (counting ? " · harvests " + G.harvestsTotal + "/1000" : "");
 };
 
 FCP.addTask("garden", function () { return !!FrozenCookies.autoGarden; }, FCP.gardenTick, 3000);

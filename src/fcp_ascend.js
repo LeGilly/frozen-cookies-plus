@@ -197,7 +197,7 @@ FCP.researchSteps = function () {
 };
 FCP.ascendHolds = function () {
     var holds = [], fps = Game.fps, lastSec = 0;
-    var eta = function (sec) { lastSec = sec; return sec > 0 ? ", about " + timeDisplay(Math.ceil(sec)) : ""; };
+    var eta = function (sec) { lastSec = sec; return sec > 0 ? ", " + FCP.shortTime(sec) : ""; };
     // Each goal keeps the estimate given to eta() in its label (0: none).
     var add = function (label) { holds.push({ label: label, sec: lastSec }); lastSec = 0; };
     // Research up to Elder Pact: wrinklers (One mind) and the Elder Pledge come from it. Only with
@@ -208,12 +208,12 @@ FCP.ascendHolds = function () {
     if (needsElders && Game.Has("Persistent memory") && !Game.Has("Elder Pact") && bingo && (bingo.unlocked || bingo.bought)) {
         var steps = FCP.researchSteps(),
             per = Game.baseResearchTime / 10;
-        add("research (" + steps + " steps to Elder Pact" + eta((steps * per) / fps) + ")");
+        add("research (" + steps + " to Elder Pact" + eta((steps * per) / fps) + ")");
     }
     // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
     // seconds each with the Covenant cycle (fcp_achievements.js).
     if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted && FCP.pledgesWanted())
-        add("Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
+        add("pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
     // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
     // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
     var G = Game.Objects["Farm"].minigame;
@@ -228,18 +228,19 @@ FCP.ascendHolds = function () {
         }
         if (growing.length) {
             growing.sort(function (a, b) { return a.sec - b.sec; });
-            add("a new " + growing[0].name + " seed maturing in the garden" + eta(growing[0].sec));
+            lastSec = growing[0].sec;
+            add("new " + growing[0].name + " seed (" + FCP.shortTime(growing[0].sec) + ")");
         }
     }
     if (Game.season === "christmas") {
         // 200 reindeer in one run.
         if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) {
             var r = Game.shimmerTypes.reindeer, avg = r && r.maxTime > r.minTime ? (r.minTime + 0.25 * (r.maxTime - r.minTime)) / fps : 0;
-            add("Reindeer sleigher (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")");
+            add("reindeer (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")");
         }
         // Santa's final form.
         if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < 14)
-            add("All hail Santa (Santa " + Game.santaLevel + "/14)");
+            add("Santa (" + Game.santaLevel + "/14)");
     }
     return holds;
 };
@@ -306,11 +307,11 @@ FCP.ascendTick = function () {
     if (have < target) {
         var left = FCP.ascendCookiesLeft(), rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
         FCP.status["Ascension"] =
-            (first ? "first one at " + Beautify(target) + " prestige levels" : "when prestige doubles (+" + Beautify(target) + " levels)") +
+            (first ? "first at " + Beautify(target) + " levels" : "at +" + Beautify(target) + " levels (prestige ×2)") +
             " · " + Beautify(Math.max(0, have)) + " so far" +
             // A time only when close: income keeps growing, so a far-off estimate at today's
             // income (years, early in a run) means nothing.
-            (rate > 0 && left / rate < 6 * 3600 ? " · about " + timeDisplay(left / rate) : "");
+            (rate > 0 && left / rate < 6 * 3600 ? " · ~" + FCP.shortTime(left / rate) : "");
         return;
     }
     // Worth it, but first the one-time goals this run can still finish (at most 8 hours).
@@ -318,14 +319,14 @@ FCP.ascendTick = function () {
     if (holds.length) {
         var left = FCP.holdLeft(holds);
         if (left > 0) {
-            FCP.status["Ascension"] = "ready, waiting for " + holds.map(function (h) { return h.label; }).join(" · ") +
-                " · at most " + timeDisplay(Math.ceil(left)) + " more";
+            FCP.status["Ascension"] = "ready · waiting: " + holds.map(function (h) { return h.label; }).join(", ") +
+                " · max " + FCP.shortTime(left);
             return;
         }
     }
     // Wait out a combo, pop the wrinklers, then go.
     if (cpsBonus() > 1 || hasClickBuff()) {
-        FCP.status["Ascension"] = "ready, waiting for the current buffs to end";
+        FCP.status["Ascension"] = "ready · after the current buffs";
         return;
     }
     var wrinklers = Game.wrinklers.filter(function (w) {
@@ -333,7 +334,7 @@ FCP.ascendTick = function () {
     });
     if (wrinklers.length) {
         wrinklers.forEach(function (w) { w.hp = 0; });
-        FCP.status["Ascension"] = "ready, popping wrinklers first";
+        FCP.status["Ascension"] = "ready · popping wrinklers";
         return;
     }
     FCP.status["Ascension"] = "ascending now";

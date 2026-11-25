@@ -15,7 +15,7 @@ test("early in a run, lumps wait for the next building in the plan instead of go
   await page.waitForTimeout(6000);
   // No bank yet: nothing is spent (no Farm level 2 in the meantime), and the plan says why.
   expect(await page.evaluate(() => [Game.lumps, Game.Objects.Farm.level, Game.Objects.Bank.level])).toEqual([3, 1, 0]);
-  expect(await page.evaluate(() => FCP.status["Sugar lumps"])).toContain("waiting until you own a bank");
+  expect(await page.evaluate(() => FCP.status["Sugar lumps"])).toContain("needs a bank");
   // A bank is bought: it gets its level.
   await page.evaluate(() => Game.Objects.Bank.buy(1));
   await expect.poll(() => page.evaluate(() => Game.Objects.Bank.level), { timeout: 15_000 }).toBe(1);

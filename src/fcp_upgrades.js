@@ -108,7 +108,7 @@ FCP.upgradeSource = function (u) {
         var req = u.unlockAt.require;
         if (req && !Game.Has(req) && !(Game.Achievements[req] && Game.Achievements[req].won))
             return ["Heavenly", "needs " + req];
-        return ["Cookies baked this run", Beautify(u.unlockAt.cookies) + " baked (" + pct(Game.cookiesEarned, u.unlockAt.cookies) + ")"];
+        return ["Cookies baked", Beautify(u.unlockAt.cookies) + " baked this run (" + pct(Game.cookiesEarned, u.unlockAt.cookies) + ")"];
     }
     var text = (u.ddesc || u.desc || "").replace(/<q>.*?<\/q>/g, "").replace(/<[^>]+>/g, "");
     return ["Other", text.slice(0, 120)];
@@ -140,7 +140,7 @@ FCP.upgradeSummary = function () {
     var r = FCP.upgradeReport();
     var groups = Object.keys(r.groups).sort(function (a, b) { return r.groups[b].length - r.groups[a].length; });
     return (
-        r.owned + "/" + r.total + " this run · heavenly " + r.heavenlyOwned + "/" + r.heavenlyTotal +
+        r.owned + "/" + r.total + " · heavenly " + r.heavenlyOwned + "/" + r.heavenlyTotal +
         (groups.length ? " · missing: " + groups.slice(0, 3).map(function (g) { return g.toLowerCase() + " " + r.groups[g].length; }).join(", ") : "")
     );
 };

@@ -122,11 +122,12 @@ FCP.stockTick = function () {
         }
         if (it.stock > 0) held++;
     }
+    // Short: the details are in the README and the option's hint.
     FCP.status["Stock market"] =
-        held + " good" + (held == 1 ? "" : "s") + " held · total profit $" + Beautify(B.profit) +
+        held + " held · profit $" + Beautify(Math.round(B.profit)) +
         " · fee " + (20 * Math.pow(0.95, B.brokers)).toFixed(1) + "%" +
-        (soon ? " · ascension in under " + FCP.STOCK_MIN_HOURS + " hours: not buying, selling anything in profit (the market is reset at ascension)" : "") +
-        (B.brokers < B.getMaxBrokers() ? (FCP.brokerWorth(B) ? " · hiring a broker when the cookies are there" : " · next broker once $" + Beautify(Math.ceil(1200 / (0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05))) + " of stock is bought ($" + Beautify(FCP.stockVolume()) + " so far)") : "");
+        (soon ? " · ascending in <" + FCP.STOCK_MIN_HOURS + "h: selling, not buying" : "") +
+        (B.brokers < B.getMaxBrokers() && !soon ? (FCP.brokerWorth(B) ? " · hiring a broker" : " · next broker at $" + Beautify(Math.ceil(1200 / (0.01 * 20 * Math.pow(0.95, B.brokers) * 0.05))) + " bought ($" + Beautify(Math.round(FCP.stockVolume())) + ")") : "");
 };
 
 FCP.addTask("stocks", function () { return !!FrozenCookies.autoStocks; }, FCP.stockTick, 5000);

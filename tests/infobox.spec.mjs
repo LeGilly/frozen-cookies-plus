@@ -43,8 +43,8 @@ test("the golden cookie times follow the game's own timer", async ({ page }) => 
   await page.evaluate(() => Game.Upgrades["Lucky day"].earn());
   expect((await at(100)).likely).toBeCloseTo(later.likely, 5);
   // Past the earliest time, and right before the latest: still shown.
-  expect((await at(400)).text).toMatch(/^likely in .* \(could appear any moment, at the latest in 8m 20s\)$/);
-  expect((await at(899.9)).text).toMatch(/at the latest in 1s\)$/);
+  expect((await at(400)).text).toMatch(/^likely in .* \(now to 8m 20s\)$/);
+  expect((await at(899.9)).text).toMatch(/now to 1s\)$/);
   // A cookie on screen, and the Golden switch.
   expect(await page.evaluate(() => { Game.shimmerTypes.golden.spawned = 1; return FCP.gcTimes().state; })).toBe("onscreen");
   noErrors(errors);
@@ -113,6 +113,13 @@ test("with no golden cookie bank kept, the panel says why and how far it is", as
     if (delayAmount() !== 0) return "bank kept: " + delayAmount();
     return FCP.infoLines([]).filter((l) => l.label === "Golden cookie bank").map((l) => l.value).join("");
   });
-  expect(text).toMatch(/^none for now · a Lucky! bank \(.+\) would pay for itself in .+, .+ in .+ · FC starts saving once the bank wins$/);
+  expect(text).toMatch(/^none yet · a Lucky! bank \(.+\) pays back in .+ vs .+ in .+$/);
+  noErrors(errors);
+});
+
+test("short times keep the two biggest units", async ({ page }) => {
+  const errors = await loadGame(page);
+  expect(await page.evaluate(() => [0, 45, 60, 61, 3661, 20000, 90000].map(FCP.shortTime)))
+    .toEqual(["0s", "45s", "1m", "1m 1s", "1h 1m", "5h 33m", "1d 1h"]);
   noErrors(errors);
 });

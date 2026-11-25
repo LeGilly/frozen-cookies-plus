@@ -54,8 +54,8 @@ FCP.lumpStep = function () {
     for (var i = 0; i < FCP.minigameBuildings.length; i++) {
         var o = Game.Objects[FCP.minigameBuildings[i]];
         if (o.level < 1) {
-            FCP.status["Sugar lumps"] = o.name + " → level 1 (unlocks its minigame) · need 1, have " + Game.lumps +
-                (o.amount > 0 ? "" : " · waiting until you own a " + o.single);
+            FCP.status["Sugar lumps"] = o.name + " → lvl 1 (minigame) · lumps " + Game.lumps + "/1" +
+                (o.amount > 0 ? "" : " · needs a " + o.single);
             if (o.amount > 0 && Game.lumps >= 1 + keep) {
                 FCP.levelUp(o);
                 return true;
@@ -78,13 +78,13 @@ FCP.lumpStep = function () {
         var cost = b.level + 1;
         var goal =
             targets[t][1] === 10 && b.levelAchiev10
-                ? " for “" + b.levelAchiev10.dname + "”"
+                ? " (“" + b.levelAchiev10.dname + "”)"
                 : b.name === "Cursor" && b.level >= 10
-                ? " (top bank office needs level 12)"
+                ? " (bank office)"
                 : "";
         FCP.status["Sugar lumps"] =
-            b.name + " → level " + cost + " of " + targets[t][1] + goal + " · need " + cost + ", have " + Game.lumps +
-            (reserve ? " (keeping " + reserve + ")" : "") + (b.amount > 0 ? "" : " · waiting until you own a " + b.single);
+            b.name + " → lvl " + cost + "/" + targets[t][1] + goal + " · lumps " + Game.lumps + "/" + cost +
+            (reserve ? " (+" + reserve + " kept)" : "") + (b.amount > 0 ? "" : " · needs a " + b.single);
         if (b.amount > 0 && Game.lumps - cost >= reserve) {
             FCP.levelUp(b);
             return true;
@@ -101,7 +101,7 @@ FCP.lumpStep = function () {
     //    owned: early in a run the cheap buildings would look best for the wrong reason.
     var missing = Game.ObjectsById.filter(function (o) { return o.amount <= 0; });
     if (missing.length) {
-        FCP.status["Sugar lumps"] = "level targets reached · more levels once you own every building (" + missing[0].name + " next)";
+        FCP.status["Sugar lumps"] = "targets done · more once every building is owned (" + missing[0].name + ")";
         return false;
     }
     var best = null,
@@ -118,7 +118,7 @@ FCP.lumpStep = function () {
         }
     });
     if (best) {
-        FCP.status["Sugar lumps"] = "levelling " + best.name + " (next: level " + (best.level + 1) + ")";
+        FCP.status["Sugar lumps"] = best.name + " → lvl " + (best.level + 1) + " · lumps " + Game.lumps + "/" + (best.level + 1);
         if (Game.lumps - (best.level + 1) >= reserve) {
             FCP.levelUp(best);
             return true;

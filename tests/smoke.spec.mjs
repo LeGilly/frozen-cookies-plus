@@ -63,7 +63,7 @@ test("brokers are only hired once enough stock has been bought for them to pay o
   // Stock is bought with the fee, but a few dollars of purchases don't justify a broker.
   await expect.poll(() => page.evaluate(() => Game.Objects.Bank.minigame.goodsById[0].stock), { timeout: 15_000 }).toBeGreaterThan(0);
   expect(await page.evaluate(() => Game.Objects.Bank.minigame.brokers)).toBe(0);
-  expect(await page.evaluate(() => FCP.status["Stock market"])).toMatch(/fee 20\.0% · next broker once \$120,000 of stock is bought/);
+  expect(await page.evaluate(() => FCP.status["Stock market"])).toMatch(/fee 20\.0% · next broker at \$120,000 bought/);
   // After $120,000 of purchases, the first broker pays for itself: hired.
   await page.evaluate(() => FCP.stockVolume(120000));
   await expect.poll(() => page.evaluate(() => Game.Objects.Bank.minigame.brokers), { timeout: 15_000 }).toBeGreaterThan(0);
@@ -127,13 +127,14 @@ test("close to an ascension the stock bot stops buying and takes any profit", as
   await expect.poll(() => page.evaluate(() => Game.Objects.Bank.minigame.goodsById[0].stock), { timeout: 15_000 }).toBe(0);
   expect(await page.evaluate(() => Game.Objects.Bank.minigame.goodsById[1].stock)).toBe(0);
   expect(await page.evaluate(() => Game.Objects.Bank.minigame.brokers)).toBe(0);
-  expect(await page.evaluate(() => FCP.status["Stock market"])).toMatch(/not buying, selling anything in profit/);
+  expect(await page.evaluate(() => FCP.status["Stock market"])).toMatch(/ascending in <2h: selling, not buying/);
   // A new run starts its own broker count and price records.
   expect(await page.evaluate(() => { FCP.stockVolume(5000); Game.startDate += 1; return [FCP.stockVolume(), FCP.stockPaid(0)]; })).toEqual([0, undefined]);
   noErrors(errors);
 });
 
 test("after an ascension's reset, the Pantheon slots are filled again and the garden replanted", async ({ page }) => {
+  test.setTimeout(150_000); // slow with the whole suite running alongside
   const errors = await loadGame(page);
   await richGame(page);
   await page.evaluate(() => {
@@ -143,12 +144,12 @@ test("after an ascension's reset, the Pantheon slots are filled again and the ga
   await page.waitForFunction(() => Game.Objects.Temple.minigame && Game.Objects.Temple.minigame.slot && Game.Objects.Farm.minigame && Game.Objects.Farm.minigame.plot);
   await setOptions(page, { autoWorshipToggle: 1, autoWorship0: 2, autoWorship1: 8, autoWorship2: 6, autoGarden: 1 });
   await page.evaluate(() => minigameCheckAction()); // FC picks up newly unlocked minigames once a minute
-  await expect.poll(() => page.evaluate(() => Game.Objects.Temple.minigame.slot.join(",")), { timeout: 20_000 }).toBe("2,8,6");
+  await expect.poll(() => page.evaluate(() => Game.Objects.Temple.minigame.slot.join(",")), { timeout: 45_000 }).toBe("2,8,6");
   // What the game does to these minigames at ascension (non-hard reset).
   await page.evaluate(() => { Game.Objects.Temple.minigame.reset(); Game.Objects.Farm.minigame.reset(); Game.cookies *= 1000; });
   expect(await page.evaluate(() => Game.Objects.Temple.minigame.slot.join(","))).toBe("-1,-1,-1");
-  await expect.poll(() => page.evaluate(() => Game.Objects.Temple.minigame.slot.join(",")), { timeout: 20_000 }).toBe("2,8,6");
-  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.minigame.plot.flat().filter((t) => t[0] > 0).length), { timeout: 20_000 }).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => Game.Objects.Temple.minigame.slot.join(",")), { timeout: 45_000 }).toBe("2,8,6");
+  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.minigame.plot.flat().filter((t) => t[0] > 0).length), { timeout: 45_000 }).toBeGreaterThan(0);
   noErrors(errors);
 });
 

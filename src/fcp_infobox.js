@@ -81,7 +81,7 @@ FCP.hunterWaiting = function () {
         w.push("Debt evasion (" + (B && B.officeLevel >= 2 ? "next ascension" : "needs bank office 3") + ")");
     }
     if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted && FCP.pledgesWanted())
-        w.push(Game.Has("Elder Pact") ? "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + " this run)" : "Elder Pledges (needs Elder Pact)");
+        w.push(Game.Has("Elder Pact") ? "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + ")" : "Elder Pledges (needs Elder Pact)");
     return w;
 };
 
@@ -126,11 +126,11 @@ FCP.noBankInfo = function () {
         var bankScore = cookieEfficiency(Game.cookies, lucky);
         var next = nextChainedPurchase();
         if (!next || !isFinite(next.efficiency)) return "";
-        var fmt = function (sec) { return timeDisplay(Math.max(1, Math.round(sec))); };
+        var fmt = function (sec) { return FCP.shortTime(Math.max(1, sec)); };
         if (!(bankScore < Number.MAX_VALUE / 2)) return "none · golden cookies don't count right now";
         var name = next.purchase && (next.purchase.dname || next.purchase.name);
-        return "none for now · a Lucky! bank (" + Beautify(lucky) + ") would pay for itself in " + fmt(bankScore) +
-            ", " + name + " in " + fmt(next.efficiency) + " · FC starts saving once the bank wins";
+        return "none yet · a Lucky! bank (" + Beautify(lucky) + ") pays back in " + fmt(bankScore) +
+            " vs " + name + " in " + fmt(next.efficiency);
     } catch (e) {
         return "";
     }
@@ -190,7 +190,7 @@ FCP.infoLines = function (t_d) {
             "#fcd400",
             "Golden cookie bank",
             Math.floor(pct * 100) + "% of " + Beautify(bankTotal) +
-                (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full") + " (so Lucky! pays the most)"
+                (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full")
         );
         var why = pct < 1 && FCP.bankWatch && FCP.bankWatch.why;
         if (why) line("#9e9e9e", "Why not full", why);
@@ -207,17 +207,17 @@ FCP.infoLines = function (t_d) {
     if ((FrozenCookies.autoDragon || FrozenCookies.dragonTiming) && FCP.dragonNext) {
         var dn = null;
         try { dn = FCP.dragonNext(); } catch (e) {}
-        if (dn) line("#ffb74d", "Dragon", dn.name + " · costs " + dn.cost + (dn.why ? " · " + dn.why : " · now"));
+        if (dn) line("#ffb74d", "Dragon", dn.name.replace(/^Train /, "") + " · " + dn.cost + (dn.why ? " · " + dn.why : " · now"));
     }
 
     if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {
         var clickText;
         if (FCP.noClickActive && FCP.noClickActive()) clickText = "paused for the Neverclick challenge";
         else if (FCP.clicks && FCP.clicks.measured !== null)
-            clickText = Math.round(FCP.clicks.measured) + "/s measured (set to " + FrozenCookies.cookieClickSpeed + "/s)" +
+            clickText = Math.round(FCP.clicks.measured) + "/s (set " + FrozenCookies.cookieClickSpeed + "/s" +
+                (FrozenCookies.cookieClickSpeed > 50 ? ", game max 50/s" : "") + ")" +
                 (FrozenCookies.measuredClicks ? "" : " · estimates use the setting");
-        else clickText = "measuring… (set to " + FrozenCookies.cookieClickSpeed + "/s)";
-        if (FrozenCookies.cookieClickSpeed > 50) clickText += " · the game allows 50/s at most";
+        else clickText = "measuring… (set " + FrozenCookies.cookieClickSpeed + "/s)";
         line("#80cbc4", "Clicking", clickText);
     }
 
@@ -227,9 +227,9 @@ FCP.infoLines = function (t_d) {
         if (gc.state === "onscreen") gcText = "one is on screen";
         else if (gc.state === "paused") gcText = "none while the Golden switch is on";
         else {
-            var fmt = function (sec) { return timeDisplay(Math.max(1, Math.ceil(sec))); };
-            if (gc.earliest > 0) gcText = "likely in " + fmt(gc.likely) + " (between " + fmt(gc.earliest) + " and " + fmt(gc.latest) + ")";
-            else if (gc.latest > 0) gcText = "likely in " + fmt(gc.likely) + " (could appear any moment, at the latest in " + fmt(gc.latest) + ")";
+            var fmt = function (sec) { return FCP.shortTime(Math.max(1, sec)); };
+            if (gc.earliest > 0) gcText = "likely in " + fmt(gc.likely) + " (" + fmt(gc.earliest) + " to " + fmt(gc.latest) + ")";
+            else if (gc.latest > 0) gcText = "likely in " + fmt(gc.likely) + " (now to " + fmt(gc.latest) + ")";
             else gcText = "any moment now";
         }
         line("#ffde5f", "Next golden cookie", gcText);

@@ -37,7 +37,7 @@ test("first ascension at 440 levels, upgrades bought, then only when prestige do
   await page.evaluate(() => Game.Earn(Game.HowManyCookiesReset(Game.prestige * 1.8) - Game.cookiesReset));
   await page.waitForTimeout(2500);
   expect(await page.evaluate(() => [Game.resets, !!Game.AscendTimer || !!Game.OnAscend])).toEqual([1, false]);
-  expect(await page.evaluate(() => FCP.status["Ascension"])).toContain("when prestige doubles");
+  expect(await page.evaluate(() => FCP.status["Ascension"])).toContain("(prestige ×2)");
   noErrors(errors);
 });
 
@@ -84,7 +84,7 @@ test("a run ready to ascend waits for one-time goals still in reach, at most 8 h
   await setOptions(page, { smartAscend: 1, challengeRuns: 0, autoBuy: 0, autoReindeer: 0 });
   await page.evaluate(() => { Game.season = "christmas"; Game.seasonT = Game.fps * 3600 * 24; Game.reindeerClicked = 10;
     Game.Earn(Game.HowManyCookiesReset(250) - Game.cookiesReset); });
-  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready, waiting for Reindeer sleigher \(10\/200, about .+\) · at most 7h 59m/);
+  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready · waiting: reindeer \(10\/200, .+\) · max 7h 59m/);
   expect(await page.evaluate(() => Game.resets)).toBe(0);
   // 8 hours later: it goes.
   await page.evaluate(() => localStorage.setItem("fcpAscendHold", JSON.stringify({ run: String(Game.startDate), since: Date.now() - 8.1 * 3600e3 })));
@@ -114,7 +114,7 @@ test("research is only waited for once Persistent memory makes it quick", async 
     return { without, withPM };
   });
   expect(holds.without.some((l) => /^research/.test(l))).toBe(false);
-  expect(holds.withPM.some((l) => /^research \(10 steps to Elder Pact, about 30m\)$/.test(l))).toBe(true);
+  expect(holds.withPM.some((l) => /^research \(10 to Elder Pact, 30m\)$/.test(l))).toBe(true);
   noErrors(errors);
 });
 
@@ -132,7 +132,7 @@ test("a new seed growing in the garden holds the ascension until it matures", as
     const ripe = FCP.ascendHolds().map((h) => h.label);
     return { growing, ripe };
   });
-  expect(r.growing.some((l) => /^a new Thumbcorn seed maturing in the garden, about /.test(l))).toBe(true);
+  expect(r.growing.some((l) => /^new Thumbcorn seed \(.+\)$/.test(l))).toBe(true);
   expect(r.ripe.some((l) => /garden/.test(l))).toBe(false); // mature: the garden bot harvests it now
   noErrors(errors);
 });

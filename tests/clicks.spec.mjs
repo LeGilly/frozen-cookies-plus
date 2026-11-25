@@ -27,6 +27,6 @@ test("the real click rate is measured and used instead of the configured 250/s",
   expect(r.scaled).toBeCloseTo(r.unscaled * 0.5, 5);   // FC values clicking at 25/s, not 250/s
   expect(r.rate).toBeCloseTo(r.perClick * 25, 5);        // time estimates use 25/s too
   await setOptions(page, { fancyui: 1 });
-  await expect(page.locator("#fcpInfoPanel")).toContainText("25/s measured (set to 250/s)", { timeout: 15_000 });
+  await expect(page.locator("#fcpInfoPanel")).toContainText("25/s (set 250/s, game max 50/s)", { timeout: 15_000 });
   noErrors(errors);
 });

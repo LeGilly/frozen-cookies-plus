@@ -343,6 +343,16 @@ FCP.patchMenu = function () {
 };
 
 // Upgrades owned this run, and where each missing one comes from (fcp_upgrades.js).
+FCP.shortTime = function (sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    var units = [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]], parts = [];
+    for (var i = 0; i < units.length && parts.length < 2; i++) {
+        var n = Math.floor(sec / units[i][1]);
+        if (n > 0 || parts.length) { parts.push(n + units[i][0]); sec -= n * units[i][1]; }
+    }
+    return parts.length ? parts.filter(function (p, i) { return i === 0 || p[0] !== "0"; }).join(" ") : "0s";
+};
+
 FCP.appendUpgradeTracker = function (section) {
     var report = FCP.upgradeReport();
     section.append(

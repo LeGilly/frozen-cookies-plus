@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.12.4 · 2026-11-25
+- Shorter infobox lines, with times shown as their two biggest units ("5h 33m"). For example:
+  - Next ascension: "ready · waiting: new Cronerice seed (5h 33m), reindeer (42/200, 4h 56m) · max 5h 41m", or "at +5,727 levels (prestige ×2) · 4,022 so far · ~8m 6s"
+  - Stock market: "2 held · profit $74,373 · fee 2.7% · next broker at $887,076 bought ($2,573)"
+  - Golden cookie bank: "100% of 1.701 octillion · full" (no-bank: "none yet · a Lucky! bank (X) pays back in A vs Y in B")
+  - Next golden cookie: "likely in 41s (now to 2m 14s)"; Clicking: "36/s (set 250/s, game max 50/s)"
+  - Dragon: "Dragon Orbs · 100 idleverses · have 74/100"; Sugar lumps: "Temple → lvl 1 (minigame) · lumps 0/1"; Garden: "breeding Cronerice (Baker's wheat + Thumbcorn) · seeds 2/34"; Upgrades: "321/716 · heavenly 21/129 · missing: …"
+
 ## 1.12.3 · 2026-11-25
 - Smart ascension: a goal estimated to finish soon after the 8-hour wait ends is still waited for, up to 2 more hours (10 hours in all at most), instead of being cut off nearly done. The limit follows the estimates as they move (reindeer, plant growth). "at most … more" in the infobox includes it, and the stock market's "ascension soon" check uses the same limit
 
