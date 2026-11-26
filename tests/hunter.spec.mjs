@@ -229,3 +229,25 @@ test("with the Elder Pledge option, FC's autobuy leaves the elders alone, and a 
   expect(r.covenantAfter).toBe(false);
   noErrors(errors);
 });
+
+test("Fading luck: one golden cookie is kept from FC and clicked in its last second", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    Game.killBuffs && Game.killBuffs();
+    for (const b in Game.buffs) delete Game.buffs[b];
+    FrozenCookies.achievementHunter = 1;
+    const g = new Game.shimmer("golden", { noWrath: true });
+    g.spawnLead = 1; // as a naturally spawned one
+    FCP.fadingTick();
+    const kept = FCP.fading === g;
+    // FC's loop tries to click it: nothing happens.
+    FCP.inFCLoop = true; g.pop(); FCP.inFCLoop = false;
+    const stillThere = Game.shimmers.indexOf(g) !== -1;
+    // Its last second: clicked, and the achievement is won.
+    g.life = Game.fps - 1;
+    FCP.fadingTick();
+    return { kept, stillThere, gone: Game.shimmers.indexOf(g) === -1, won: !!Game.HasAchiev("Fading luck") };
+  });
+  expect(r).toEqual({ kept: true, stillThere: true, gone: true, won: true });
+  noErrors(errors);
+});

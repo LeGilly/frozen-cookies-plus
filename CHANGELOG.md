@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.2 · 2026-11-26
+### Added
+- Achievement Hunter: *Fading luck* (click a golden cookie less than 1 second before it disappears). FC clicks every golden cookie the moment it appears, so it only happened by chance, when the game was out of focus. FC+ now keeps one naturally spawned golden cookie from FC, one that appears while no buff is running so no combo waits for it, and clicks it in its last second. Its reward is the same, only a few seconds later, and it happens once
+
 ## 1.13.1 · 2026-11-26
 ### Added
 - Achievement building caps (new option, on with Apply recommended options): FC's recommended settings stop buying Mines and Factories at 500, for its Godzamok combo, and Wizard towers once max magic reaches 37. That blocked each building's count achievements from 550 to 700, the "...centennial and a half" to Septcentennial achievements, and the butter biscuits (CpS upgrades) that having 550 to 700 of every building unlocks each run. Late in the game those buildings cost almost nothing (a factory: a ten-thousandth of a second of income), so once buying up to 700 fits in the cookies FC+ can spare, it raises those caps to 700 while FC decides; Godzamok then sells and buys back 700. Your own settings stay as they are

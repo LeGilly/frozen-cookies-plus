@@ -235,6 +235,53 @@ FCP.giftTick = function () {
 };
 
 // ---------------------------------------------------------------------------
+// Fading luck (Achievement Hunter): click a golden cookie less than 1 second before it dies. FC
+// clicks every golden cookie as soon as it appears, so it never happens on its own (only when the
+// game is out of focus and FC runs late). FC+ keeps one golden cookie from FC, one that spawned
+// while no buff was running, so no combo waits for it, and clicks it in its last second. Its
+// reward is the same, only later; once, until the achievement is won.
+FCP.fading = null; // the golden cookie kept for Fading luck
+FCP.inFCLoop = false; // FC's main loop (where it clicks golden cookies) is running
+FCP.wrapOnce(window, "autoCookie", "fcLoop", function (original) {
+    return function () {
+        FCP.inFCLoop = true;
+        try {
+            return original.apply(this, arguments);
+        } finally {
+            FCP.inFCLoop = false;
+        }
+    };
+});
+FCP.wrapOnce(Game.shimmer.prototype, "pop", "fading", function (original) {
+    return function () {
+        // Only FC's clicks wait; in its last second FC may click it too (that wins it as well).
+        if (this === FCP.fading && FCP.inFCLoop && this.life >= Game.fps) return;
+        return original.apply(this, arguments);
+    };
+});
+FCP.fadingTick = function () {
+    if (FCP.has("Fading luck")) {
+        FCP.fading = null;
+        return;
+    }
+    var f = FCP.fading;
+    if (f && Game.shimmers.indexOf(f) === -1) f = FCP.fading = null; // gone (clicked, or missed)
+    if (!f) {
+        if (Object.keys(Game.buffs).length || FCP.busy()) return;
+        // Only a naturally spawned one counts (spawnLead): not a Cookie storm drop or a fortune's.
+        f = Game.shimmers.filter(function (s) { return s.type === "golden" && s.spawnLead; })[0];
+        if (!f) return;
+        FCP.fading = f;
+        FCP.log("Keeping a golden cookie until its last second, for 'Fading luck'.");
+    }
+    if (f.life < Game.fps) {
+        FCP.fading = null;
+        f.pop();
+    }
+};
+FCP.addTask("fading", function () { return !!FrozenCookies.achievementHunter && !FCP.has("Fading luck"); }, FCP.fadingTick, 200);
+
+// ---------------------------------------------------------------------------
 // Elder Pledge / Covenant achievements
 // ---------------------------------------------------------------------------
 // Elder Pledges: Elder nap (1), Elder slumber (5 in one run), Elder calm (the Covenant), and
@@ -567,7 +614,8 @@ FCP.classifyAchievement = function (a) {
         return FrozenCookies.achievementHunter ? ["FC+ Achievement Hunter", "pops " + Game.wrinklersPopped + " / " + (n === "Moistburster" ? 200 : 50) + " this run"] : ["FC Auto-wrinkler", "in one run"];
     if (n === "Itchscratcher") return ["FC Auto-wrinkler", ""];
     if (/^(Oh deer|Sleigh of hand|Reindeer sleigher)$/.test(n)) return ["FC Auto-reindeer", ""];
-    if (/^(Golden cookie|Lucky cookie|A stroke of luck|Fortune|Leprechaun|Black cat's paw|Early bird|Fading luck|Wrath cookie)$/.test(n))
+    if (n === "Fading luck") return FrozenCookies.achievementHunter ? ["FC+ Achievement Hunter", "a golden cookie clicked in its last second"] : ["Manual", "click a golden cookie in its last second (FC clicks them at once)"];
+    if (/^(Golden cookie|Lucky cookie|A stroke of luck|Fortune|Leprechaun|Black cat's paw|Early bird|Wrath cookie)$/.test(n))
         return ["FC Auto-golden cookies", ""];
     if (/^(Spooky cookies|Let it snow|Lovely cookies|The hunt is on|Egging on|Mass Easteria|Hide & seek champion|Coming to town|All hail Santa)$/.test(n))
         return ["FC seasons (needs season switcher)", ""];
