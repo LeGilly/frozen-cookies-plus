@@ -24,17 +24,11 @@ FCP.BURST_EXTRA = 10;
 FCP.burstSkip = ["Chocolate egg", "One mind", "Communal brainsweep", "Elder Pact", "Elder Pledge", "Elder Covenant",
     "Revoke Elder Covenant", "Sugar frenzy", "Golden switch [off]", "Golden switch [on]"];
 
-FCP.spareCookies = function () {
-    var bank = 0;
-    try { bank = delayAmount() || 0; } catch (e) {}
-    return Game.cookies - bank;
-};
-
 FCP.burstActive = function () {
     if (!FrozenCookies.burstBuy || !FrozenCookies.autoBuy) return false;
     var next = null;
     try { next = nextPurchase(); } catch (e) {}
-    return !!(next && next.cost > 0 && FCP.spareCookies() >= FCP.BURST_FACTOR * next.cost);
+    return !!(next && next.cost > 0 && FCP.spare() >= FCP.BURST_FACTOR * next.cost);
 };
 
 // How many of `bldg` to buy, at most `count`.
@@ -87,7 +81,7 @@ FCP.burstExtra = function () {
     for (var i = 0; i < list.length && bought < FCP.BURST_EXTRA; i++) {
         var r = list[i];
         if (!r || !r.purchase || !isFinite(r.efficiency)) continue;
-        var spare = FCP.spareCookies();
+        var spare = FCP.spare();
         if (r.type === "building") {
             var b = r.purchase;
             if (b.getPrice() > spare) continue;

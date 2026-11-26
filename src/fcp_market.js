@@ -51,7 +51,7 @@ FCP.ascensionSoon = function () {
         if (!FCP.ascendHolds().length) return true;
         return FCP.holdLeft(FCP.ascendHolds()) < horizon;
     }
-    var rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
+    var rate = FCP.cookieRate();
     return rate > 0 && FCP.ascendCookiesLeft() / rate < horizon;
 };
 
@@ -81,8 +81,7 @@ FCP.stockTick = function () {
     if (!soon) FCP.hireBrokers(B);
     var overhead = 1 + 0.01 * (20 * Math.pow(0.95, B.brokers));
     var budget = soon ? 0 : FCP.spare() * 0.5;
-    var held = 0,
-        trades = 0;
+    var held = 0;
 
     for (var i = 0; i < B.goodsById.length; i++) {
         var it = B.goodsById[i];
@@ -100,7 +99,6 @@ FCP.stockTick = function () {
             var veryHigh = val >= rest * 2;
             if (profitable && ((high && it.mode != 3) || veryHigh || soon)) {
                 if (B.sellGood(it.id, it.stock)) {
-                    trades++;
                     continue;
                 }
             }
@@ -117,7 +115,6 @@ FCP.stockTick = function () {
                 var before = it.stock - n, old = FCP.stockPaid(it.id) || val * overhead;
                 FCP.stockPaid(it.id, (old * before + val * overhead * n) / it.stock);
                 budget -= n * unit;
-                trades++;
             }
         }
         if (it.stock > 0) held++;

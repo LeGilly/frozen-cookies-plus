@@ -183,16 +183,28 @@ test("a goal nearly done when the 8 hours run out gets up to 2 more hours", asyn
   noErrors(errors);
 });
 
-test("research is only waited for once Persistent memory makes it quick", async ({ page }) => {
+test("research is only waited for once Persistent memory makes it quick, and for goals an option works on", async ({ page }) => {
   const errors = await loadGame(page);
   const holds = await page.evaluate(() => {
     Game.Unlock("Bingo center/Research facility");
+    FrozenCookies.achievementHunter = 1;
+    FrozenCookies.elderPledgeAchievs = 1;
     const without = FCP.ascendHolds().map((h) => h.label);
     Game.Upgrades["Persistent memory"].earn();
     const withPM = FCP.ascendHolds().map((h) => h.label);
-    return { without, withPM };
+    // Neither the Achievement Hunter nor the Elder Pledge option: nothing would use the research.
+    FrozenCookies.achievementHunter = 0;
+    FrozenCookies.elderPledgeAchievs = 0;
+    const noOptions = FCP.ascendHolds().map((h) => h.label);
+    const target = FCP.researchTarget();
+    FrozenCookies.achievementHunter = 1;
+    const hunterOnly = FCP.researchTarget();
+    return { without, withPM, noOptions, target, hunterOnly };
   });
   expect(holds.without.some((l) => /^research/.test(l))).toBe(false);
+  expect(holds.noOptions.some((l) => /^research/.test(l))).toBe(false);
+  expect(holds.target).toBe(null);
+  expect(holds.hunterOnly).toEqual({ target: "Elder Pact", missing: ["Wrinklesquisher", "Moistburster"] });
   expect(holds.withPM.some((l) => /^research \(10 to Elder Pact, 30m · for Elder nap \+4\)$/.test(l))).toBe(true);
   noErrors(errors);
 });
@@ -202,6 +214,8 @@ test("research holds only as far as the missing achievements need: One mind for 
   const r = await page.evaluate(() => {
     Game.Unlock("Bingo center/Research facility");
     Game.Upgrades["Persistent memory"].earn();
+    FrozenCookies.achievementHunter = 1;
+    FrozenCookies.elderPledgeAchievs = 0; // this run's pledges would want Elder Pact too
     const research = () => FCP.ascendHolds().map((h) => h.label).filter((l) => /^research/.test(l));
     ["Elder nap", "Elder slumber", "Elder calm", "Wrinklesquisher", "Moistburster"].forEach((n) => Game.Win(n));
     const pokerOnly = research();

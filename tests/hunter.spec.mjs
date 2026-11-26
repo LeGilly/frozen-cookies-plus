@@ -63,7 +63,7 @@ test("Elder Pact is bought once researched, then the first pledge", async ({ pag
   noErrors(errors);
 });
 
-test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Covenant is left off while wrinklers are wanted", async ({ page }) => {
+test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Covenant is left on when nothing wants wrinklers", async ({ page }) => {
   test.setTimeout(120_000);
   const errors = await loadGame(page);
   await richGame(page, { buildings: 100 });
@@ -73,7 +73,9 @@ test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Co
   expect(await won(page, "Elder slumber")).toBeTruthy();
   expect(await won(page, "Elder calm")).toBeTruthy();
   await expect.poll(() => page.evaluate(() => !!Game.Upgrades["Sacrificial rolling pins"].unlocked), { timeout: 10_000 }).toBe(true);
-  await expect.poll(() => page.evaluate(() => !Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);
+  // The Achievement Hunter is off: nothing pokes or pops wrinklers, so the Covenant stays on.
+  await page.waitForTimeout(5000);
+  expect(await page.evaluate(() => !!Game.Upgrades["Elder Covenant"].bought)).toBe(true);
   const pledges = await page.evaluate(() => Game.pledges);
   await page.waitForTimeout(5000);
   expect(await page.evaluate(() => Game.pledges)).toBe(pledges); // stops once done

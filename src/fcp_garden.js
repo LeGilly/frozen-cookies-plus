@@ -117,7 +117,7 @@ FCP.gardenLayout = function (G, recipe) {
             for (var rx = 0; rx < b.w; rx++) set(rx, ry, pattern[ry % 6]);
     } else if (recipe.layout === "sparse") {
         // Isolated parents 3 tiles apart: every empty tile touches at most one.
-        for (var ry = 1; ry < b.h; ry += 3) for (var rx = 1; rx < b.w; rx += 3) set(rx, ry, A);
+        for (var sy = 1; sy < b.h; sy += 3) for (var sx = 1; sx < b.w; sx += 3) set(sx, sy, A);
     } else if (recipe.layout === "ring") {
         // 3x3 blocks with an empty centre surrounded by 8 parents.
         for (var by = 0; by + 3 <= b.h; by += 3)

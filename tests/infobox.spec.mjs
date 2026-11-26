@@ -123,3 +123,18 @@ test("short times keep the two biggest units", async ({ page }) => {
     .toEqual(["0s", "45s", "1m", "1m 1s", "1h 1m", "5h 33m", "1d 1h"]);
   noErrors(errors);
 });
+
+test("every FC+ time uses one format, and the tracker has a hint for every manual achievement it lists", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    FrozenCookies.shadowAchievements = 0;
+    return {
+      times: [FCP.shortTime(44 * 60 + 25), FCP.shortTime(3 * 3600), FCP.shortTime(400 * 86400 + 5), FCP.shortTime(Infinity)],
+      lastChance: FCP.classifyAchievement(Game.Achievements["Last Chance to See"]),
+    };
+  });
+  expect(r.times).toEqual(["44m 25s", "3h", "1y 35d", "never"]);
+  expect(r.lastChance[0]).toBe("Manual");
+  expect(r.lastChance[1]).toMatch(/shiny wrinkler/);
+  noErrors(errors);
+});

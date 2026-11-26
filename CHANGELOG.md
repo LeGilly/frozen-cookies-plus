@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.12.9 · 2026-11-26
+### Changed
+- The elder achievements only count when an option works on them: Wrinkler poker and the wrinkler pops with the Achievement Hunter, Elder nap, slumber and calm with the Elder Pledge option. Without them, FC+ no longer buys Communal brainsweep and Elder Pact (which turn golden cookies into wrath cookies for the rest of the run), and smart ascension no longer waits for that research
+- Every time FC+ shows uses one format, its two largest units ("12h 25m", "40m 15s"): "Buying next", "Then working toward" and the store tooltips used FC's longer one ("12h 25m 14s")
+
+### Fixed
+- With the Achievement Hunter off, the Covenant never went on after the Elder Pledges: it waited for Wrinkler poker, which nothing was poking for
+- The upgrade tracker said FC skips Elder Pact; FC+ buys it for the Elder Pledges
+- The achievement tracker listed Last Chance to See as manual without a hint when shadow achievements are off
+
 ## 1.12.8 · 2026-11-26
 - The research chain stalled at Communal brainsweep: FC only buys research that raises income, and Communal brainsweep and Elder Pact raise the elder wrath (more wrath cookies), so FC scores them as no gain and never buys them. FC+ only bought Elder Pact itself, which never unlocked, so the 10 Elder Pledges (Sacrificial rolling pins, every run) waited forever and smart ascension's research hold waited for research nobody bought. While a goal needs the research (the elder achievements, or this run's pledges with the Elder Pledge option), FC+ now buys each step as it unlocks, within the golden cookie bank. The research hold also counts the pledges: "research (3 to Elder Pact, 9m · for Elder Pledges)"
 - After the pledges, the Covenant is now left on instead of revoked, once the run needs no more wrinklers (Wrinkler poker, the 200 pops with the Achievement Hunter, the Halloween and Easter drops while FC collects them). With Elder Pact bought every run for the pledges, revoking left the elders at full wrath for the rest of the run: nearly every golden cookie became a wrath cookie, and golden cookies are most of the late income. The Covenant costs 5% CpS and stops wrinklers spawning, so it is revoked again if wrinklers are needed (a Halloween visit, say)

@@ -83,10 +83,10 @@ FCP.buildingShare = function (o) {
 FCP.waitFor = function (cost) {
     var need = cost - Game.cookies;
     if (need <= 0) return "affordable now";
-    var rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
+    var rate = FCP.cookieRate();
     if (!(rate > 0)) return "no income yet";
     var sec = need / rate;
-    return "in " + (sec < 1 ? "under 1s" : timeDisplay(sec));
+    return "in " + (sec < 1 ? "under 1s" : FCP.shortTime(sec));
 };
 
 // The tooltip section (HTML), shared by buildings and upgrades.
@@ -106,7 +106,7 @@ FCP.insightTooltip = function (key, building) {
         row("Rating", '<span style="color:' + rating.color + ';">' + rating.label + "</span>" + (rankText ? " (" + rankText + vsBest + ")" : ""));
         if (info.deltaCps > 0) {
             row("Income gain", "+" + FCP.num(info.deltaCps) + "/s (+" + FCP.pct(info.gain) + ")");
-            row("Pays for itself in", timeDisplay(info.cost / info.deltaCps));
+            row("Pays for itself in", FCP.shortTime(info.cost / info.deltaCps));
         }
         row("Price", Beautify(info.cost) + " · " + FCP.waitFor(info.cost));
     }

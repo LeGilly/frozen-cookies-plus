@@ -80,7 +80,7 @@ FCP.hunterWaiting = function () {
         var B = Game.Objects["Bank"].minigame;
         w.push("Debt evasion (" + (B && B.officeLevel >= 2 ? "next ascension" : "needs bank office 3") + ")");
     }
-    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted && FCP.pledgesWanted())
+    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted())
         w.push(Game.Has("Elder Pact") ? "Elder Pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + ")" : "Elder Pledges (needs Elder Pact)");
     return w;
 };
@@ -155,7 +155,7 @@ FCP.infoLines = function (t_d) {
         if (need <= 0) return "affordable now";
         if (!(rate > 0)) return "waiting for a golden cookie";
         var sec = need / rate;
-        return "in " + (sec < 1 ? "under 1s" : timeDisplay(sec));
+        return "in " + (sec < 1 ? "under 1s" : FCP.shortTime(sec));
     };
 
     var np = null;
@@ -192,7 +192,7 @@ FCP.infoLines = function (t_d) {
             Math.floor(pct * 100) + "% of " + Beautify(bankTotal) +
                 (pct < 1 ? " · full " + eta(bankTotal - Game.cookies) : " · full")
         );
-        var why = pct < 1 && FCP.bankWatch && FCP.bankWatch.why;
+        var why = pct < 1 && FCP.bankWatch.why;
         if (why) line("#9e9e9e", "Why not full", why);
     } else {
         // No bank kept: say why, and how far it is from starting. FC keeps a bank once filling it
@@ -204,7 +204,7 @@ FCP.infoLines = function (t_d) {
 
     if (FrozenCookies.smartAscend && FCP.status["Ascension"]) line("#b39ddb", "Next ascension", FCP.status["Ascension"]);
 
-    if ((FrozenCookies.autoDragon || FrozenCookies.dragonTiming) && FCP.dragonNext) {
+    if (FrozenCookies.autoDragon || FrozenCookies.dragonTiming) {
         var dn = null;
         try { dn = FCP.dragonNext(); } catch (e) {}
         if (dn) line("#ffb74d", "Dragon", dn.name.replace(/^Train /, "") + " · " + dn.cost + (dn.why ? " · " + dn.why : " · now"));
@@ -212,8 +212,8 @@ FCP.infoLines = function (t_d) {
 
     if (FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) {
         var clickText;
-        if (FCP.noClickActive && FCP.noClickActive()) clickText = "paused for the Neverclick challenge";
-        else if (FCP.clicks && FCP.clicks.measured !== null)
+        if (FCP.noClickActive()) clickText = "paused for the Neverclick challenge";
+        else if (FCP.clicks.measured !== null)
             clickText = Math.round(FCP.clicks.measured) + "/s (set " + FrozenCookies.cookieClickSpeed + "/s" +
                 (FrozenCookies.cookieClickSpeed > 50 ? ", game max 50/s" : "") + ")" +
                 (FrozenCookies.measuredClicks ? "" : " · estimates use the setting");
@@ -251,7 +251,7 @@ FCP.infoLines = function (t_d) {
     if (FrozenCookies.autoStocks && FCP.status["Stock market"]) plus.push(["#4fc3f7", "Stock market", FCP.status["Stock market"]]);
     var waiting = FCP.hunterWaiting();
     if (waiting.length) plus.push(["#f48fb1", "Waiting for", waiting.join(" · ")]);
-    if (FCP.upgradeSummary) plus.push(["#ffd54f", "Upgrades", FCP.upgradeSummary()]);
+    plus.push(["#ffd54f", "Upgrades", FCP.upgradeSummary()]);
     var close = FCP.closestMilestones(2);
     if (close.length)
         plus.push([

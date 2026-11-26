@@ -34,7 +34,7 @@ FCP.auraValue = function (a0, a1) {
         Game.dragonAura = a0;
         Game.dragonAura2 = a1;
         Game.CalculateGains();
-        value = Game.cookiesPs + (FCP.realClickRate ? FCP.realClickRate() : 0) * Game.computedMouseCps;
+        value = Game.cookiesPs + FCP.realClickRate() * Game.computedMouseCps;
     } finally {
         Game.dragonAura = keep[0];
         Game.dragonAura2 = keep[1];
@@ -149,7 +149,7 @@ FCP.dragonNext = function () {
     var lvl = Game.dragonLevel,
         it = Game.dragonLevels[lvl],
         name = String(it.action || "").replace(/<br>.*$/i, "").replace(/<[^>]+>/g, ""),
-        income = Math.max(1, FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs) * 60 * FCP.DRAGON_REBUY_MINUTES;
+        income = Math.max(1, FCP.cookieRate()) * 60 * FCP.DRAGON_REBUY_MINUTES;
     var cost = String(it.costStr ? it.costStr() : "").replace(/<[^>]+>/g, "");
     var r = { name: name, cost: cost, ready: !!it.cost(), worth: true, why: "" };
     if (lvl >= 5 && lvl < Game.dragonLevels.length - 3) {
@@ -173,7 +173,7 @@ FCP.dragonNext = function () {
         }
     } else {
         var price = Math.pow(2, lvl) * 1e6;
-        r.worth = FCP.canSpend ? FCP.canSpend(price) : true;
+        r.worth = FCP.canSpend(price);
         if (!r.ready) r.why = "when you have " + Beautify(price) + " cookies";
         else if (!r.worth) r.why = "waiting for cookies above the golden cookie bank";
     }

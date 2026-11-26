@@ -296,9 +296,9 @@ FCP.marathonTick = function () {
         return;
     }
     if (Game.AscendTimer || Game.ReincarnateTimer || Game.ascensionMode == 1 || left > 0) return;
-    if (FCP.busy && FCP.busy()) return;
+    if (FCP.busy()) return;
     FCP.marathonAscending = true;
-    if (FCP.autoAscend) FCP.autoAscend("marathon"); else Game.Ascend(1);
+    FCP.autoAscend("marathon");
 };
 
 // ---------------------------------------------------------------------------

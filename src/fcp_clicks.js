@@ -10,6 +10,19 @@ FCP.clicks = { samples: [], measured: null };
 // whatever the autoclicker is set to.
 FCP.MAX_CLICKS = 50;
 
+// The autoclicker is on and allowed to click (not held back for a Neverclick run).
+FCP.autoclicking = function () {
+    return !!(FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed) && !FCP.noClickActive();
+};
+
+// Clicks per second really happening right now: the measured rate (Measured clicks option), else
+// the setting capped at the game's maximum; 0 while not autoclicking.
+FCP.realClickRate = function () {
+    if (!FCP.autoclicking()) return 0;
+    if (FrozenCookies.measuredClicks && FCP.clicks.measured !== null) return FCP.clicks.measured;
+    return Math.min(FrozenCookies.cookieClickSpeed, FCP.MAX_CLICKS);
+};
+
 FCP.clickTick = function () {
     var now = Date.now();
     var s = FCP.clicks.samples;
@@ -17,16 +30,10 @@ FCP.clickTick = function () {
     while (s.length && now - s[0].t > 30000) s.shift();
     // Only measure plain autoclicking: no click buffs in the window, and clicking actually allowed.
     var clean = s.every(function (x) { return !x.frenzy; });
-    var autoclicking = FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed && !(FCP.noClickActive && FCP.noClickActive());
-    if (!autoclicking || !clean || s.length < 2) return;
+    if (!FCP.autoclicking() || !clean || s.length < 2) return;
     var span = (s[s.length - 1].t - s[0].t) / 1000;
     var n = s[s.length - 1].clicks - s[0].clicks;
     if (span >= 10 && n >= 0) FCP.clicks.measured = n / span;
-};
-
-// Clicks per second really happening (null until measured).
-FCP.measuredClickRate = function () {
-    return FCP.clicks.measured;
 };
 
 // Ratio between real and configured autoclicking, at most 1.
@@ -47,14 +54,7 @@ baseClickingCps = function (clickSpeed) {
 // Cookies per second actually being made: buildings, plus the autoclicker at its real speed,
 // only while it is really clicking (used by the infobox time estimates).
 FCP.cookieRate = function () {
-    var rate = Game.cookiesPs;
-    var clicking = FrozenCookies.autoClick && FrozenCookies.cookieClickSpeed && !(FCP.noClickActive && FCP.noClickActive());
-    if (clicking) {
-        var speed = Math.min(FrozenCookies.cookieClickSpeed, FCP.MAX_CLICKS);
-        if (FrozenCookies.measuredClicks && FCP.clicks.measured !== null) speed = FCP.clicks.measured;
-        rate += Game.computedMouseCps * speed;
-    }
-    return rate;
+    return Game.cookiesPs + Game.computedMouseCps * FCP.realClickRate();
 };
 
 FCP.addTask("clicks", function () { return true; }, FCP.clickTick, 1000);

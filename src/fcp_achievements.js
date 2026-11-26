@@ -109,6 +109,15 @@ FCP.patchWrinklerPop = function () {
 // out (it has sucked next to nothing by then). It leaves the wrinkler being poked for Wrinkler
 // poker, and shiny ones (Shiny pop decides about those).
 FCP.POP_GOALS = [{ name: "Wrinklesquisher", n: 50 }, { name: "Moistburster", n: 200 }];
+// The elder achievements and the option that works on each: a goal only counts (research, holds,
+// keeping the elders angry) while something is there to get it.
+FCP.ELDER_GOAL_OPTIONS = {
+    "Wrinkler poker": "achievementHunter", Wrinklesquisher: "achievementHunter", Moistburster: "achievementHunter",
+    "Elder nap": "elderPledgeAchievs", "Elder slumber": "elderPledgeAchievs", "Elder calm": "elderPledgeAchievs",
+};
+FCP.elderGoalOpen = function (name) {
+    return !FCP.has(name) && !!FrozenCookies[FCP.ELDER_GOAL_OPTIONS[name]];
+};
 FCP.popTarget = function () {
     var missing = FCP.POP_GOALS.filter(function (g) { return !FCP.has(g.name); });
     return missing.length ? missing[missing.length - 1].n : 0;
@@ -170,8 +179,7 @@ FCP.patchAscend = function () {
                 FrozenCookies.shadowAchievements &&
                 !FCP.marathonAscending &&
                 !FCP.has("When the cookies ascend just right") &&
-                Game.cookies >= 1e12 &&
-                FCP.landBank
+                Game.cookies >= 1e12
             ) {
                 if (FCP.landBank(1e12)) FCP.log("Bank set to exactly 1 trillion before ascending: 'When the cookies ascend just right'.");
             }
@@ -200,10 +208,10 @@ FCP.pledgesWanted = function () {
 };
 
 // What this run still needs wrinklers for (they only spawn while the elders are angry, so not under
-// the Covenant): Wrinkler poker, the pop counts (with the Achievement Hunter), and the Halloween and
+// the Covenant): Wrinkler poker and the pop counts (with the Achievement Hunter), and the Halloween and
 // Easter drops while FC collects them. "" when nothing.
 FCP.wrinklersWanted = function () {
-    if (!FCP.has("Wrinkler poker")) return "Wrinkler poker";
+    if (FCP.elderGoalOpen("Wrinkler poker")) return "Wrinkler poker";
     if (FrozenCookies.achievementHunter && FCP.popTarget() > 0) return "pops " + Game.wrinklersPopped + "/" + FCP.popTarget();
     if (/^(halloween|easter)$/.test(Game.season) && typeof haveAll === "function" && !haveAll(Game.season))
         return Game.seasons[Game.season].name + " drops";
@@ -242,7 +250,7 @@ FCP.elderTick = function () {
         return;
     }
     var shinyKept = FrozenCookies.shinyPop == 1 && Game.wrinklers.some(function (w) { return w.type == 1 && w.phase > 0; });
-    if ((FrozenCookies.achievementHunter && FCP.pokeTarget && FCP.pokeTarget()) || shinyKept) {
+    if ((FrozenCookies.achievementHunter && FCP.pokeTarget()) || shinyKept) {
         FCP.status["Elder Pledges"] = "pledges " + Game.pledges + "/" + FCP.PLEDGE_GOAL + " · waiting: a pledge pops every wrinkler";
         return;
     }
@@ -388,7 +396,6 @@ FCP.patchReincarnate = function () {
 FCP.challengeTick = function () {
     FCP.patchReincarnate();
     FCP.watchNoClick();
-    if (!FrozenCookies.challengeRuns) return;
 
     // Finishing the exit ascension we started.
     if (FCP.challengeExit && Game.OnAscend && !Game.AscendTimer) {
@@ -440,7 +447,7 @@ FCP.challengeTick = function () {
         FCP.challengeExit = true;
         FCP.challengeFlag(false);
         FCP.log("Challenge run finished, ascending back to a normal run.", true);
-        if (FCP.autoAscend) FCP.autoAscend("challenge"); else Game.Ascend(1);
+        FCP.autoAscend("challenge");
     }
 };
 
@@ -464,6 +471,7 @@ FCP.manualHints = {
     "Just plain lucky": "1 in a million chance every second; just keep the game running",
     "So much to do so much to see": "keep a save running for a year",
     "When the cookies ascend just right": "ascend with exactly 1 trillion cookies in the bank",
+    "Last Chance to See": "pop the shiny wrinkler (rare), or turn on FC+ shadow achievements",
     "Speed baking I": "bake 1 million cookies within 35 minutes of a new run",
     "Speed baking II": "bake 1 million cookies within 25 minutes of a new run",
     "Speed baking III": "bake 1 million cookies within 15 minutes of a new run",
@@ -487,8 +495,6 @@ FCP.classifyAchievement = function (a) {
     if (n === "All-natural cane sugar") return ["Luck / time", "harvest a golden sugar lump (rare lump type)"];
     if (FCP.manualHints[n])
         return [/lucky|year|Speed|exactly/.test(FCP.manualHints[n]) || a.pool === "shadow" ? "Manual / luck / shadow" : "Manual", FCP.manualHints[n]];
-    if (n === "Stifling the press")
-        return FrozenCookies.achievementTricks ? ["FC+ Achievement Hunter", ""] : ["Manual", FCP.manualHints[n]];
     if (/^(Tabloid addiction|What's in a name|Here you go|Tiny cookie|Olden days|Just wrong|Hand-picked|Wrinkler poker|Debt evasion)$/.test(n))
         return ["FC+ Achievement Hunter", ""];
     if (n === "Hardcore") return [FrozenCookies.challengeRuns == 2 ? "FC+ Challenge runs" : "Manual", "Born Again run, no upgrades until 1 billion baked (Challenge runs + HARDCORE)"];
@@ -500,22 +506,22 @@ FCP.classifyAchievement = function (a) {
     }
     if (/^(Botany enthusiast|Green, aching thumb|In the garden of Eden \(baby\)|Keeper of the conservatory|Seedless to nay)$/.test(n))
         return ["FC+ Auto-garden", ""];
-    if (/^(Initial public offering|Rookie numbers|No nobility in poverty|Full warehouses|Buy buy buy|Make my day|Liquid assets|Gaseous assets)$/.test(n))
+    if (/^(Initial public offering|Rookie numbers|No nobility in poverty|Full warehouses|Buy buy buy|Make my day|Liquid assets)$/.test(n))
         return ["FC+ Auto-stocks", ""];
     if (n === "Pyramid scheme") return ["FC Auto-Banking + FC+ Auto-lumps", "needs level 12 cursors"];
     if (/^(Bibbidi-bobbidi-boo|I'm the wiz|A wizard is you)$/.test(n)) return ["FC Auto-cast", ""];
     if (n === "Here be dragon") return ["FC Auto-dragon", ""];
     if (/^(Wrinklesquisher|Moistburster)$/.test(n))
         return FrozenCookies.achievementHunter ? ["FC+ Achievement Hunter", "pops " + Game.wrinklersPopped + " / " + (n === "Moistburster" ? 200 : 50) + " this run"] : ["FC Auto-wrinkler", "in one run"];
-    if (/^(Itchscratcher|Last Chance to See)$/.test(n)) return ["FC Auto-wrinkler", n === "Last Chance to See" ? "turn on Shiny pop" : ""];
+    if (n === "Itchscratcher") return ["FC Auto-wrinkler", ""];
     if (/^(Oh deer|Sleigh of hand|Reindeer sleigher)$/.test(n)) return ["FC Auto-reindeer", ""];
-    if (/^(Golden cookie|Lucky cookie|A stroke of luck|Fortune|Leprechaun|Black cat's paw|Seven horseshoes|Early bird|Fading luck|Wrath cookie)$/.test(n))
+    if (/^(Golden cookie|Lucky cookie|A stroke of luck|Fortune|Leprechaun|Black cat's paw|Early bird|Fading luck|Wrath cookie)$/.test(n))
         return ["FC Auto-golden cookies", ""];
     if (/^(Spooky cookies|Let it snow|Lovely cookies|The hunt is on|Egging on|Mass Easteria|Hide & seek champion|Coming to town|All hail Santa)$/.test(n))
         return ["FC seasons (needs season switcher)", ""];
-    if (/^(Rebirth|Resurrection|Reincarnation|Endless cycle|Sacrifice|Oblivion|From scratch|Nihilism|Dematerialize|Nil zero zilch|Transcendence|Obliterate|Negative void|To crumbs, you say\?|You get nothing|Humble rebeginnings|The end of the world|Oh, you're back|Lazarus|Smurf account|If at first you don't succeed|No more room in hell|All the stars in heaven|Wholesome)$/.test(n))
+    if (/^(Rebirth|Resurrection|Reincarnation|Sacrifice|Oblivion|From scratch|Nihilism|Dematerialize|Nil zero zilch|Transcendence|Obliterate|Negative void|To crumbs, you say\?|You get nothing|Humble rebeginnings|The end of the world|Oh, you're back|Lazarus|Smurf account|If at first you don't succeed|No more room in hell|All the stars in heaven|Wholesome)$/.test(n))
         return ["FC Auto-ascend", ""];
-    if (/^(Dude, sweet|Sugar rush|Year's worth of cavities|Sugar sugar|All-natural cane sugar|Sweetmeats|Maillard reaction)$/.test(n))
+    if (/^(Dude, sweet|Sugar rush|Year's worth of cavities|Sugar sugar|Sweetmeats|Maillard reaction)$/.test(n))
         return ["Sugar lumps over time (FC Auto-harvest)", ""];
     if (n === "O Fortuna") return ["FC Auto-fortune", ""];
     if (n === "Uncanny clicker") return ["FC Autoclick", ""];

@@ -347,10 +347,11 @@ FCP.patchMenu = function () {
     Game.UpdateMenu = wrapped;
 };
 
-// Upgrades owned this run, and where each missing one comes from (fcp_upgrades.js).
+// A duration as its two largest units ("2h 58m", "40m 15s"): every time FC+ shows uses this.
 FCP.shortTime = function (sec) {
+    if (!isFinite(sec)) return "never";
     sec = Math.max(0, Math.ceil(sec));
-    var units = [["d", 86400], ["h", 3600], ["m", 60], ["s", 1]], parts = [];
+    var units = [["y", 31536000], ["d", 86400], ["h", 3600], ["m", 60], ["s", 1]], parts = [];
     for (var i = 0; i < units.length && parts.length < 2; i++) {
         var n = Math.floor(sec / units[i][1]);
         if (n > 0 || parts.length) { parts.push(n + units[i][0]); sec -= n * units[i][1]; }
@@ -358,6 +359,7 @@ FCP.shortTime = function (sec) {
     return parts.length ? parts.filter(function (p, i) { return i === 0 || p[0] !== "0"; }).join(" ") : "0s";
 };
 
+// Upgrades owned this run, and where each missing one comes from (fcp_upgrades.js).
 FCP.appendUpgradeTracker = function (section) {
     var report = FCP.upgradeReport();
     section.append(
@@ -453,11 +455,11 @@ FCP.appendMenu = function () {
                 section.append(box);
             });
     }
-    if (FCP.upgradeReport) FCP.appendUpgradeTracker(section);
+    FCP.appendUpgradeTracker(section);
     var first = menu.children(".subsection").first();
     if (first.length) first.after(section);
     else menu.append(section);
-    if (FrozenCookies.insights && FCP.breakdownHtml) {
+    if (FrozenCookies.insights) {
         var income = $("<div>").addClass("subsection").attr("id", "fcpIncome");
         income.append($("<div>").addClass("title").text("Where your cookies come from (FC+)"));
         income.append($("<div>").addClass("listing").html(FCP.breakdownHtml()));

@@ -121,7 +121,7 @@ FCP.permanentScores = function () {
     var list = Object.keys(Game.Upgrades).map(function (k) { return Game.Upgrades[k]; }).filter(function (u) {
         return u.bought && u.unlocked && !u.noPerm && (u.pool === "" || u.pool === "cookie");
     });
-    var clicks = FCP.realClickRate ? FCP.realClickRate() : 0;
+    var clicks = FCP.realClickRate();
     var value = function () { return Game.cookiesPs + clicks * Game.computedMouseCps; };
     var win = Game.Win, scores = [];
     Game.Win = function () {};
@@ -207,18 +207,20 @@ FCP.RESEARCH_GOALS = [
     { target: "Elder Pact", achievs: ["Elder nap", "Elder slumber", "Elder calm", "Wrinklesquisher", "Moistburster"] }
 ];
 // The furthest research step this run still needs, and for what: {target, missing} or null.
-// The elder achievements (FCP.RESEARCH_GOALS), and the 10 Elder Pledges for Sacrificial rolling
-// pins (every run, with the Elder Pledge option): the Pledge only unlocks with Elder Pact.
+// The elder achievements (FCP.RESEARCH_GOALS) whose option is on (FCP.elderGoalOpen), and the 10
+// Elder Pledges for Sacrificial rolling pins (every run, with the Elder Pledge option): the Pledge
+// only unlocks with Elder Pact. With neither option on, nothing is researched for them: Communal
+// brainsweep and Elder Pact turn golden cookies into wrath cookies for the rest of the run.
 FCP.researchTarget = function () {
     var target = null, missing = [];
     FCP.RESEARCH_GOALS.forEach(function (g) {
-        var m = g.achievs.filter(function (n) { return !FCP.has(n); });
+        var m = g.achievs.filter(FCP.elderGoalOpen);
         if (m.length && !Game.Has(g.target)) {
             target = g.target;
             missing = m;
         }
     });
-    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted && FCP.pledgesWanted() && !Game.Has("Elder Pact")) {
+    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted() && !Game.Has("Elder Pact")) {
         if (target !== "Elder Pact") missing = ["Elder Pledges"];
         target = "Elder Pact";
     }
@@ -267,11 +269,11 @@ FCP.ascendHolds = function () {
     }
     // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
     // seconds each with the Covenant cycle (fcp_achievements.js).
-    if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted && FCP.pledgesWanted())
+    if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted())
         add("pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
     // 50 and 200 wrinklers popped in one run (Wrinklesquisher, Moistburster): the Achievement Hunter
     // pops them as they come out (fcp_achievements.js). Waited for once wrinklers can spawn.
-    var pops = FrozenCookies.achievementHunter && FCP.popTarget ? FCP.popTarget() : 0;
+    var pops = FrozenCookies.achievementHunter ? FCP.popTarget() : 0;
     if (pops && Game.Has("One mind") && Game.wrinklersPopped < pops) {
         var rate = FCP.wrinklerSpawnRate();
         add("pops (" + Game.wrinklersPopped + "/" + pops + eta(rate > 0 ? (pops - Game.wrinklersPopped) / rate : 0) + ")");
@@ -382,7 +384,7 @@ FCP.ascendTick = function () {
         have = FCP.runLevels(),
         first = Game.prestige <= 0;
     if (have < target) {
-        var left = FCP.ascendCookiesLeft(), rate = FCP.cookieRate ? FCP.cookieRate() : Game.cookiesPs;
+        var left = FCP.ascendCookiesLeft(), rate = FCP.cookieRate();
         FCP.status["Ascension"] =
             (first ? "first at " + Beautify(target) + " levels" : "at +" + Beautify(target) + " levels (prestige ×2)") +
             " · " + Beautify(Math.max(0, have)) + " so far" +
@@ -398,10 +400,10 @@ FCP.ascendTick = function () {
     // Worth it, but first the one-time goals this run can still finish (at most 8 hours).
     var holds = FCP.ascendHolds();
     if (holds.length) {
-        var left = FCP.holdLeft(holds);
-        if (left > 0) {
+        var waitLeft = FCP.holdLeft(holds);
+        if (waitLeft > 0) {
             FCP.status["Ascension"] = "ready · waiting: " + holds.map(function (h) { return h.label; }).join(", ") +
-                " · max " + FCP.shortTime(left);
+                " · max " + FCP.shortTime(waitLeft);
             return;
         }
     }

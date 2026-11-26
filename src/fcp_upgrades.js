@@ -43,7 +43,7 @@ FCP.upgradeSource = function (u) {
 
     if (u.unlocked) {
         if (n === "Chocolate egg") return ["In the store", "sell it at ascension for 5% of the bank (FC skips it)"];
-        if (n === "Elder Pact") return ["In the store", "turns golden cookies into wrath cookies (FC skips it)"];
+        if (n === "Elder Pact") return ["In the store", "turns golden cookies into wrath cookies: FC skips it, FC+ buys it for the Elder Pledges"];
         var price = u.getPrice();
         return ["In the store", Game.cookies >= price ? "affordable, not bought yet" : "costs " + Beautify(price)];
     }
@@ -60,7 +60,7 @@ FCP.upgradeSource = function (u) {
     if (/^Dragon (scale|claw|fang|teddy bear)$/.test(n)) return ["Dragon", "pet the dragon at level 8+ (1 in 20 per pet, drop depends on the minute)"];
     if (n === "Dragon cookie") return ["Dragon", "the dragon's last training step (50 of every building)"];
     if (u.pool === "tech") return ["Research", n === "Elder Pact" ? "last step of the research chain" : "Bingo center research chain"];
-    if (n === "Sacrificial rolling pins") return ["Elder Pledges", "10 Elder Pledges in one run (" + Game.pledges + "/10)"];
+    if (n === "Sacrificial rolling pins") return ["Elder Pledges", FCP.PLEDGE_GOAL + " Elder Pledges in one run (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + ")"];
     if (FCP.kittenMilk[n] !== undefined) return ["Kittens (milk)", "milk " + Math.floor(FCP.kittenMilk[n] * 100) + "% (have " + Math.floor(Game.milkProgress * 100) + "%: more achievements)"];
     if (FCP.mouseClicks[n]) return ["Clicking", Beautify(FCP.mouseClicks[n]) + " cookies from clicks this run (" + pct(Game.handmadeCookies, FCP.mouseClicks[n]) + ")"];
     if (/^(Lucky day|Serendipity|Get lucky)$/.test(n)) {

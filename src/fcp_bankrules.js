@@ -16,15 +16,6 @@ FCP.bankRulesOn = function () {
     return !!FrozenCookies.bankRules;
 };
 
-// Clicks per second really happening right now.
-FCP.realClickRate = function () {
-    if (!FrozenCookies.autoClick || !FrozenCookies.cookieClickSpeed) return 0;
-    if (FCP.noClickActive && FCP.noClickActive()) return 0;
-    var speed = Math.min(FrozenCookies.cookieClickSpeed, FCP.MAX_CLICKS || 50);
-    if (FrozenCookies.measuredClicks && FCP.clicks && FCP.clicks.measured !== null) speed = FCP.clicks.measured;
-    return speed;
-};
-
 // Seconds left on the longest click buff (Click frenzy, Dragonflight...).
 FCP.clickBuffSeconds = function () {
     var t = 0;
