@@ -199,6 +199,17 @@ FCP.pledgesWanted = function () {
     return !FCP.has("Elder slumber") || !FCP.has("Elder calm") || (Game.pledges < FCP.PLEDGE_GOAL && !Game.Has("Sacrificial rolling pins") && !(Game.Upgrades["Sacrificial rolling pins"] || {}).unlocked);
 };
 
+// What this run still needs wrinklers for (they only spawn while the elders are angry, so not under
+// the Covenant): Wrinkler poker, the pop counts (with the Achievement Hunter), and the Halloween and
+// Easter drops while FC collects them. "" when nothing.
+FCP.wrinklersWanted = function () {
+    if (!FCP.has("Wrinkler poker")) return "Wrinkler poker";
+    if (FrozenCookies.achievementHunter && FCP.popTarget() > 0) return "pops " + Game.wrinklersPopped + "/" + FCP.popTarget();
+    if (/^(halloween|easter)$/.test(Game.season) && typeof haveAll === "function" && !haveAll(Game.season))
+        return Game.seasons[Game.season].name + " drops";
+    return "";
+};
+
 FCP.elderTick = function () {
     if (FCP.busy() || Game.ascensionMode == 1) return;
     var buy = function (name, why) {
@@ -212,9 +223,16 @@ FCP.elderTick = function () {
     };
     var covenant = Game.Upgrades["Elder Covenant"];
     if (!FCP.pledgesWanted()) {
-        // Done: undo the Covenant's -5% CpS if it was left on.
-        if (covenant && covenant.bought) buy("Revoke Elder Covenant", "(pledges done)");
+        // Pledges done. With Elder Pact the elders stay angry (wrath 3): nearly every golden cookie
+        // turns into a wrath cookie, and golden cookies are most of the late income. The Covenant
+        // calms them for good at -5% CpS, but no wrinkler spawns under it: it waits until the run
+        // needs no more wrinklers, and is revoked if it needs them again (a Halloween visit).
         FCP.status["Elder Pledges"] = "";
+        if (!covenant) return;
+        var wanted = FCP.wrinklersWanted();
+        if (wanted) {
+            if (covenant.bought) buy("Revoke Elder Covenant", "(wrinklers wanted: " + wanted + ")");
+        } else if (Game.Has("Elder Pact") && !covenant.bought) buy("Elder Covenant", "(pledges and pops done: keeps golden cookies golden)");
         return;
     }
     // The pledges only unlock with Elder Pact, the last research. FC never buys it on its own (it

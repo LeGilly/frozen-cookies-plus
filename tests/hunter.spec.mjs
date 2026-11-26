@@ -63,7 +63,7 @@ test("Elder Pact is bought once researched, then the first pledge", async ({ pag
   noErrors(errors);
 });
 
-test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Covenant is left off", async ({ page }) => {
+test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Covenant is left off while wrinklers are wanted", async ({ page }) => {
   test.setTimeout(120_000);
   const errors = await loadGame(page);
   await richGame(page, { buildings: 100 });
@@ -77,6 +77,26 @@ test("10 pledges in a minute by cycling Pledge, Covenant and Revoke, then the Co
   const pledges = await page.evaluate(() => Game.pledges);
   await page.waitForTimeout(5000);
   expect(await page.evaluate(() => Game.pledges)).toBe(pledges); // stops once done
+  noErrors(errors);
+});
+
+test("after the pledges and the pops, the Covenant stays on (FC doesn't revoke it), and comes off when wrinklers are wanted again", async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  await page.evaluate(() => {
+    ["Elder nap", "Elder slumber", "Elder calm", "Wrinkler poker", "Wrinklesquisher", "Moistburster"].forEach((n) => Game.Win(n));
+    Game.Upgrades["Elder Pact"].earn();
+    Game.Upgrades["Sacrificial rolling pins"].unlock();
+    Game.Unlock("Elder Covenant");
+  });
+  await setOptions(page, { elderPledgeAchievs: 1, achievementHunter: 1, autoBuy: 1 });
+  await expect.poll(() => page.evaluate(() => !!Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);
+  await page.waitForTimeout(15_000);
+  expect(await page.evaluate(() => [!!Game.Upgrades["Elder Covenant"].bought, Game.elderWrath])).toEqual([true, 0]);
+  // A new run's pops: the elders come back so wrinklers spawn.
+  await page.evaluate(() => { Game.Achievements["Moistburster"].won = 0; });
+  await expect.poll(() => page.evaluate(() => !Game.Upgrades["Elder Covenant"].bought), { timeout: 20_000 }).toBe(true);
   noErrors(errors);
 });
 

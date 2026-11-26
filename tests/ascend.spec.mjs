@@ -1,6 +1,6 @@
 // Smart ascension and the heavenly upgrade buyer.
 import { test, expect } from "@playwright/test";
-import { loadGame, setOptions, noErrors } from "./game.mjs";
+import { loadGame, richGame, setOptions, noErrors } from "./game.mjs";
 
 test("the heavenly upgrade list names real upgrades, and buying respects parents, order and cosmetics", async ({ page }) => {
   const errors = await loadGame(page);
@@ -74,6 +74,35 @@ test("Persistent memory comes before Season switcher, and cheaper useful upgrade
   });
   expect([r.pm, r.switcher]).toEqual([true, false]);
   expect(r.chips).toBeGreaterThanOrEqual(400); // only a few very cheap extras besides (under 1% of the saving each)
+  noErrors(errors);
+});
+
+test("it buys the research FC scores as no gain (Communal brainsweep, Elder Pact) while a goal needs it", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e30 });
+  const r = await page.evaluate(() => {
+    ["Elder nap", "Elder slumber", "Elder calm", "Wrinkler poker", "Wrinklesquisher", "Moistburster"].forEach((n) => Game.Win(n));
+    ["Bingo center/Research facility", "Specialized chocolate chips", "Designer cocoa beans", "Ritual rolling pins", "Underworld ovens", "One mind", "Exotic nuts"]
+      .forEach((n) => Game.Upgrades[n].earn());
+    Game.Upgrades["Communal brainsweep"].unlock();
+    Game.Upgrades["Persistent memory"].earn();
+    FrozenCookies.elderPledgeAchievs = 0;
+    FCP.researchTick();
+    const noGoal = Game.Has("Communal brainsweep");
+    // Every achievement won: only the 10 pledges of this run (Sacrificial rolling pins) need Elder Pact.
+    FrozenCookies.elderPledgeAchievs = 1;
+    const hold = FCP.ascendHolds().map((h) => h.label).filter((l) => /^research/.test(l));
+    FCP.researchTick();
+    const bought = Game.Has("Communal brainsweep");
+    Game.researchT = 100;
+    FCP.researchTick();
+    const status = FCP.status["Research"];
+    return { noGoal, hold, bought, status };
+  });
+  expect(r.noGoal).toBeFalsy();
+  expect(r.hold).toEqual(["research (3 to Elder Pact, 9m · for Elder Pledges)"]);
+  expect(r.bought).toBeTruthy();
+  expect(r.status).toBe("researching Arcane sugar");
   noErrors(errors);
 });
 

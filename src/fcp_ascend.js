@@ -206,6 +206,46 @@ FCP.RESEARCH_GOALS = [
     // often as the elder wrath (1 with One mind, 3 with Elder Pact: 3x as fast).
     { target: "Elder Pact", achievs: ["Elder nap", "Elder slumber", "Elder calm", "Wrinklesquisher", "Moistburster"] }
 ];
+// The furthest research step this run still needs, and for what: {target, missing} or null.
+// The elder achievements (FCP.RESEARCH_GOALS), and the 10 Elder Pledges for Sacrificial rolling
+// pins (every run, with the Elder Pledge option): the Pledge only unlocks with Elder Pact.
+FCP.researchTarget = function () {
+    var target = null, missing = [];
+    FCP.RESEARCH_GOALS.forEach(function (g) {
+        var m = g.achievs.filter(function (n) { return !FCP.has(n); });
+        if (m.length && !Game.Has(g.target)) {
+            target = g.target;
+            missing = m;
+        }
+    });
+    if (FrozenCookies.elderPledgeAchievs && FCP.pledgesWanted && FCP.pledgesWanted() && !Game.Has("Elder Pact")) {
+        if (target !== "Elder Pact") missing = ["Elder Pledges"];
+        target = "Elder Pact";
+    }
+    return target ? { target: target, missing: missing } : null;
+};
+// FC buys a research step only when it raises income. Communal brainsweep and Elder Pact raise the
+// elder wrath (more wrath cookies), so FC scores them as no gain and never buys them: the chain
+// stalled there and the research hold waited for nothing. While a goal needs the research, FC+
+// buys each step as it unlocks (it costs little next to the run's income).
+FCP.researchTick = function () {
+    var t = FCP.researchTarget();
+    FCP.status["Research"] = "";
+    if (!t || FCP.busy() || Game.ascensionMode == 1) return;
+    var chain = FCP.researchChain.concat(["Elder Pact"]), end = chain.indexOf(t.target);
+    for (var i = 0; i <= end; i++) {
+        var u = Game.Upgrades[chain[i]];
+        if (!u || u.bought) continue;
+        if (u.unlocked) {
+            if (FCP.canSpend(u.getPrice())) {
+                u.buy(1);
+                FCP.log("Bought " + u.name + " (research toward " + t.target + ", for " + t.missing[0] + ").");
+            } else FCP.status["Research"] = u.name + " (waiting for cookies)";
+        } else if (Game.researchT > 0) FCP.status["Research"] = "researching " + u.name;
+        return;
+    }
+};
+FCP.addTask("research", function () { return !!(FrozenCookies.smartAscend || FrozenCookies.elderPledgeAchievs || FrozenCookies.achievementHunter); }, FCP.researchTick, 2000);
 FCP.ascendHolds = function () {
     var holds = [], fps = Game.fps, lastSec = 0;
     var eta = function (sec) { lastSec = sec; return sec > 0 ? ", " + FCP.shortTime(sec) : ""; };
@@ -217,14 +257,7 @@ FCP.ascendHolds = function () {
     // 4.5 hours are better spent ascending, which pays for Persistent memory (500 chips) soon enough.
     var bingo = Game.Upgrades["Bingo center/Research facility"];
     if (Game.Has("Persistent memory") && bingo && (bingo.unlocked || bingo.bought)) {
-        var target = null, missing = [];
-        FCP.RESEARCH_GOALS.forEach(function (g) {
-            var m = g.achievs.filter(function (n) { return !FCP.has(n); });
-            if (m.length && !Game.Has(g.target)) {
-                target = g.target;
-                missing = m;
-            }
-        });
+        var rt = FCP.researchTarget(), target = rt && rt.target, missing = rt ? rt.missing : [];
         if (target) {
             var steps = FCP.researchSteps(target),
                 per = Game.baseResearchTime / 10;
