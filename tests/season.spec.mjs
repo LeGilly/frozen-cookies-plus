@@ -83,3 +83,35 @@ test("it sets FC's default season only with the option and Autobuy Seasons on, w
   expect(r.back).toBe(2);
   noErrors(errors);
 });
+
+test("after a Cookie storm's switch to Easter, it goes back to the season it left once the storm ends", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e30 });
+  const r = await page.evaluate(() => {
+    localStorage.removeItem("fcpStormReturn");
+    FrozenCookies.autoEaster = 1;
+    Game.Upgrades["Season switcher"].earn();
+    for (const s in Game.seasons) Game.Unlock(Game.seasons[s].trigger);
+    Game.Upgrades["Festive biscuit"].buy(1);
+    const start = Game.season;
+    Game.gainBuff("cookie storm", 7);
+    autoEasterAction();
+    const duringStorm = Game.season;
+    FCP.stormReturnTick();
+    const stillStorm = Game.season;
+    Game.killBuff("Cookie storm");
+    return { start, duringStorm, stillStorm };
+  });
+  // The buff is gone on the next game frame.
+  await page.waitForFunction(() => !Game.hasBuff("Cookie storm"));
+  Object.assign(r, await page.evaluate(() => {
+    FCP.stormReturnTick();
+    return { after: Game.season, stored: localStorage.getItem("fcpStormReturn") };
+  }));
+  expect(r.start).toBe("christmas");
+  expect(r.duringStorm).toBe("easter");
+  expect(r.stillStorm).toBe("easter");
+  expect(r.after).toBe("christmas");
+  expect(r.stored).toBe(null);
+  noErrors(errors);
+});

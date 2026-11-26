@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.12.11 · 2026-11-26
+### Fixed
+- During a Cookie storm FC switches to Easter for the eggs its cookies drop, but it never leaves a season before it has all its drops: with eggs still missing, the run stayed in Easter and left what it was doing (Christmas reindeer, Halloween wrinklers). FC+ now switches back to the season it was in once the storm ends; the missing eggs are still collected when FC visits Easter later
+
 ## 1.12.10 · 2026-11-26
 ### Changed
 - The reindeer estimates (the ascension hold's time to 200, and Smart season's reindeer income) both come from the game's own reindeer timer now, like the golden cookie estimate in the infobox. They used two different formulas, and Smart season's left out some reindeer speed-ups

@@ -65,7 +65,7 @@ the surprises found so far) and [`TODO.md`](TODO.md) (where work stands and what
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`). Research chain scoring wraps `upgradeStats`: chain upgrades are scored with the next research (toggled with `upgradeToggle` and put back) |
 | `src/fcp_clicks.js` | Measured click speed (wraps `baseClickingCps`); the shared click helpers: `FCP.autoclicking()`, `FCP.realClickRate()` (clicks/s really happening), `FCP.cookieRate()` (for estimates) |
 | `src/fcp_insight.js` | Store insight: ratings from FC's `recommendationList`, store badges, tooltips (wraps building `tooltip` and `Game.crateTooltip`), income breakdown |
-| `src/fcp_season.js` | Smart season: sets `FrozenCookies.defaultSeason` (FC visits seasons for their drops, then rests in it). Christmas while `FCP.christmasGoals()`, else the best of `FCP.seasonValues()` (reindeer vs golden cookies × Star upgrade), 10% margin to switch back |
+| `src/fcp_season.js` | Smart season: sets `FrozenCookies.defaultSeason` (FC visits seasons for their drops, then rests in it). Christmas while `FCP.christmasGoals()`, else the best of `FCP.seasonValues()` (reindeer vs golden cookies × Star upgrade), 10% margin to switch back; after a Cookie storm's switch to Easter (wraps `autoEasterAction`), switches back to the season it left (`fcpStormReturn` store) |
 | `src/fcp_infobox.js` | The infobox panel: HTML overlay above FC's wheel (wraps upstream `drawCircles`) |
 | `vendor/` | jQuery 3.6.0, jQuery UI 1.12.1, underscore 1.8.3, jCanvas 20.1.1, jqPlot 1.0.9 + plugins (licenses alongside) |
 | `tools/build.mjs` | Builds `Steam/FrozenCookiesPlus/` (info.txt + one `main.js` with everything inlined) and `dist/*.zip` |
@@ -164,7 +164,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 The tests can't run the Steam app itself; after a release, check once in the game.
 
 Run locally: `rm -rf Steam dist; CI=1 CHROME_PATH=/usr/bin/google-chrome npm test -- --workers=2` (about 4 minutes,
-87 tests at 1.12.10). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
+88 tests at 1.12.11). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
 (`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay, and counts
 FC+ console warnings and errors (`[FC+] ...`) with the page errors, so `noErrors` fails on them too. Tests that
 wait on FC's intervals can be slow when the whole suite runs at once: give them generous poll timeouts.

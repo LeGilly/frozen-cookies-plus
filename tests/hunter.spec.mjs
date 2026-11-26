@@ -45,11 +45,12 @@ test("FC's auto-wrinkler leaves the wrinkler being poked alone", async ({ page }
   // Halloween without all its cookies: FC pops every wrinkler it can, straight away.
   await page.evaluate(() => { Game.season = "halloween"; Game.seasonT = Game.fps * 3600; Game.wrinklers.forEach((w) => { w.sucked = Math.max(w.sucked, 1); }); });
   await setOptions(page, { achievementHunter: 1, autoWrinkler: 1 });
-  // The others go, the poked one stays and keeps being poked, about one poke a second.
-  await expect.poll(() => page.evaluate(() => Game.wrinklers.filter((w) => w.phase > 0 && w.hp > 0).map((w) => w.clicks)), { timeout: 30_000 })
+  // The others go, the poked one stays and keeps being poked, about one poke a second. Only
+  // wrinklers that are out count: at full wrath a new one can be on its way in at any moment.
+  await expect.poll(() => page.evaluate(() => Game.wrinklers.filter((w) => w.phase == 2 && w.hp > 0).map((w) => w.clicks)), { timeout: 30_000 })
     .toEqual([expect.any(Number)]);
   await expect.poll(() => page.evaluate(() => Math.max(...Game.wrinklers.map((w) => w.clicks))), { timeout: 30_000 }).toBeGreaterThanOrEqual(15);
-  expect(await page.evaluate(() => Game.wrinklers.filter((w) => w.phase > 0 && w.hp > 0).length)).toBe(1);
+  expect(await page.evaluate(() => Game.wrinklers.filter((w) => w.phase == 2 && w.hp > 0 && w.clicks > 0).length)).toBe(1);
   noErrors(errors);
 });
 

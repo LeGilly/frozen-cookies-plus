@@ -113,3 +113,42 @@ FCP.seasonTick = function () {
 };
 
 FCP.addTask("season", function () { return !!FrozenCookies.smartSeason; }, FCP.seasonTick, 10000);
+
+// Cookie storms: FC switches to Easter during one (autoEasterAction), since its many cookies drop
+// eggs. But FC never leaves a season before it has all its drops, so with eggs still missing the
+// run stayed in Easter, away from whatever it was doing (Christmas reindeer, Halloween wrinklers).
+// FC+ remembers the season it left (kept through a reload) and switches back once the storm ends.
+// The missing eggs are still collected later: FC visits Easter for them once the other seasons
+// are done, as usual.
+FCP.wrapOnce(window, "autoEasterAction", "stormReturn", function (original) {
+    return function () {
+        var before = Game.season;
+        var r = original.apply(this, arguments);
+        if (before !== "easter" && Game.season === "easter" && Game.hasBuff("Cookie storm")) {
+            FCP.store("fcpStormReturn", { run: String(Game.startDate), season: before });
+            FCP.log("Cookie storm: switched to Easter for its eggs, back to " + FCP.seasonName(before) + " when it ends.");
+        }
+        return r;
+    };
+});
+
+FCP.stormReturnTick = function () {
+    var d = FCP.runStore("fcpStormReturn");
+    FCP.status["Cookie storm"] = "";
+    if (typeof d.season !== "string") return;
+    var done = function () { FCP.store("fcpStormReturn", null); };
+    // Already out of Easter (FC or you switched), or nowhere to go back to: FC decides.
+    if (Game.season !== "easter" || d.season === "" || !Game.seasons[d.season]) return done();
+    if (Game.hasBuff("Cookie storm") || FCP.busy()) return;
+    var biscuit = Game.Upgrades[Game.seasons[d.season].trigger];
+    if (!biscuit || !biscuit.unlocked) return done();
+    if (!FCP.canSpend(biscuit.getPrice())) {
+        FCP.status["Cookie storm"] = "back to " + FCP.seasonName(d.season) + " once " + Beautify(biscuit.getPrice()) + " can be spent";
+        return;
+    }
+    biscuit.buy(1);
+    FCP.log("Cookie storm over: back to " + FCP.seasonName(d.season) + ".");
+    done();
+};
+
+FCP.addTask("stormReturn", function () { return true; }, FCP.stormReturnTick, 1000);

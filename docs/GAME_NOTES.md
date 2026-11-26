@@ -67,6 +67,9 @@ the function names.
   (`getProbabilityModifiers`) leaves all of these out, so `gcPs` is the same in every season. A reindeer pays
   a minute of production (x2 Ho ho ho-flavored frosting), so it shrinks as golden cookies take over the income.
   Season switch price: 1e9 + 60 s of unbuffed CpS x 1.5^(switches this run).
+- FC's season visits: it never leaves a season before `haveAll(season)` (all its drops this run), then goes to
+  any season with drops missing, else the resting one. Its Cookie storm switch to Easter (`autoEasterAction`)
+  ignores that order, so FC+ switches back after the storm (fcp_season.js).
 
 ## Dragon
 
