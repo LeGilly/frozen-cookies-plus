@@ -20,13 +20,15 @@ test("Achievement Hunter earns the one-click achievements", async ({ page }) => 
   noErrors(errors);
 });
 
-test("auto-lumps unlocks the minigames, then levels one building at a time to 10", async ({ page }) => {
+test("auto-lumps unlocks the minigames, then their levels (Farm 9, Cursor 12, Bank 10), then buildings to 10", async ({ page }) => {
   const errors = await loadGame(page);
   await richGame(page);
   await page.evaluate(() => { Game.prefs.askLumps = 1; });
   await setOptions(page, { autoLumps: 2 });
-  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 20_000 }).toBe(10);
-  await expect.poll(() => won(page, "Huge tracts of land")).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => [Game.Objects.Farm.level, Game.Objects.Cursor.level, Game.Objects.Bank.level]), { timeout: 30_000 })
+    .toEqual([9, 12, 10]);
+  // Then the CpS round, costliest building first.
+  await expect.poll(() => page.evaluate(() => Game.ObjectsById[Game.ObjectsById.length - 1].level), { timeout: 20_000 }).toBe(10);
   const minigames = await page.evaluate(() => ["Farm", "Bank", "Temple", "Wizard tower"].map((n) => Game.Objects[n].level >= 1));
   expect(minigames).toEqual([true, true, true, true]);
   expect(await page.evaluate(() => Game.prefs.askLumps)).toBe(1); // the player's setting is put back

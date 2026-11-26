@@ -4,25 +4,34 @@
 // next building in the plan isn't owned yet, the lumps wait for it rather than go elsewhere
 // (FC soon owns every building).
 // 1) Level 1 Farm/Bank/Temple/Wizard tower to unlock the minigames.
-// 2) Finish one building at a time to its target level (level 10 gives an achievement each),
-//    the costliest buildings first since they end up producing the most; cursors last, to 12
-//    for the top stock market office.
-// 3) Optionally keep levelling the building that gains the most CpS per lump, once every
+// 2) The levels that help the minigames (what each does, from the game code):
+//    - Farm to 9: the garden plot grows with each level, 2x2 at 1 to the full 6x6 at 9, and a
+//      bigger plot breeds new seeds faster.
+//    - Cursor to 12: the stock market's bank offices need Cursor levels 2, 4, 8, 10 and 12 (more
+//      warehouse space and loan slots; the top one +50% warehouse space and Pyramid scheme). FC's
+//      Auto-Banking upgrades the offices once the levels are there.
+//    - Bank to 10: every stock's resting value +1 per level.
+//    Wizard tower and Temple levels barely help theirs: max magic grows with the log of towers +
+//    10 x level (about +2 magic from level 1 to 10 with ~600 towers), and the Pantheon never reads
+//    the Temple's level. They wait for the CpS round.
+// 3) The CpS round: one building at a time to level 10 (an achievement each, and +10 warehouse
+//    space for its stock), the costliest buildings first since they end up producing the most.
+// 4) Optionally keep levelling the building that gains the most CpS per lump, once every
 //    building is owned (before that, the cheap early ones would look best).
 
 FCP.minigameBuildings = ["Farm", "Bank", "Temple", "Wizard tower"];
 
+// [building, level, why] in order: the minigame levels, then every other building to 10.
+FCP.CURSOR_OFFICE_LEVELS = [2, 4, 8, 10, 12];
 FCP.lumpTargets = function () {
     var list = [
-        ["Farm", 10], // garden plot grows with levels
-        ["Bank", 10], // stock market values and warehouses
-        ["Wizard tower", 10],
-        ["Temple", 10],
+        ["Farm", 9, "full garden plot"],
+        ["Cursor", 12, "bank offices"],
+        ["Bank", 10, "stock values"],
     ];
     Game.ObjectsById.slice().reverse().forEach(function (o) {
-        if (o.name !== "Cursor" && !list.some(function (t) { return t[0] === o.name; })) list.push([o.name, 10]);
+        if (o.name !== "Cursor" && o.name !== "Bank") list.push([o.name, 10]);
     });
-    list.push(["Cursor", 12]); // bank offices need cursor levels up to 12
     return list;
 };
 
@@ -76,11 +85,14 @@ FCP.lumpStep = function () {
         var b = Game.Objects[targets[t][0]];
         if (!b || b.level >= targets[t][1]) continue;
         var cost = b.level + 1;
+        var office = FCP.CURSOR_OFFICE_LEVELS.indexOf(cost);
         var goal =
-            targets[t][1] === 10 && b.levelAchiev10
+            b.name === "Cursor" && office !== -1
+                ? " (bank office " + (office + 2) + ")"
+                : targets[t][2]
+                ? " (" + targets[t][2] + ")"
+                : targets[t][1] === 10 && b.levelAchiev10
                 ? " (“" + b.levelAchiev10.dname + "”)"
-                : b.name === "Cursor" && b.level >= 10
-                ? " (bank office)"
                 : "";
         FCP.status["Sugar lumps"] =
             b.name + " → lvl " + cost + "/" + targets[t][1] + goal + " · lumps " + Game.lumps + "/" + cost +

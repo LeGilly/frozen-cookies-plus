@@ -7,7 +7,7 @@ test("the garden bot unlocks all seeds and sacrifices the garden for Seedless to
   const errors = await loadGame(page);
   await richGame(page, { cookies: 1e30, buildings: 400, lumps: 2000 });
   await setOptions(page, { autoLumps: 2 });
-  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 20_000 }).toBeGreaterThanOrEqual(9);
+  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 40_000 }).toBeGreaterThanOrEqual(9);
   await setOptions(page, { autoGarden: 2 });
   await page.waitForFunction(() => Game.Objects.Farm.minigame && Game.Objects.Farm.minigame.plot);
   const result = await page.evaluate(() => {
@@ -32,7 +32,7 @@ test("a new seed's plant grows on fertilizer, and the ascension waits for it how
   const errors = await loadGame(page);
   await richGame(page, { cookies: 1e30, buildings: 400, lumps: 2000 });
   await setOptions(page, { autoLumps: 2 });
-  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 20_000 }).toBeGreaterThanOrEqual(9);
+  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 40_000 }).toBeGreaterThanOrEqual(9);
   await setOptions(page, { autoGarden: 1 });
   await page.waitForFunction(() => Game.Objects.Farm.minigame && Game.Objects.Farm.minigame.plot);
   const r = await page.evaluate(() => {

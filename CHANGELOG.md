@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.0 · 2026-11-26
+### Changed
+- Sugar lumps go to the levels that help the minigames first, after unlocking them: Farm to 9 (the garden plot grows to its full 6×6), Cursor to 12 (the bank offices need Cursor levels 2, 4, 8, 10 and 12), Bank to 10 (each level raises every stock's value). That is about 180 lumps in all, where the old order spent 266 before the last office. Wizard tower and Temple levels barely help their minigames (about +2 magic from level 1 to 10 with 600 towers; the Pantheon ignores the Temple's level), so they now wait for the round that takes every building to 10, costliest first. The infobox says which office the next Cursor level opens
+
 ## 1.12.13 · 2026-11-26
 ### Changed
 - Smart ascension no longer gives up on one-time goals after 8 hours (10 for a goal nearly done): it waits for them however long they take, as long as they keep advancing. A new seed's plant is lost at ascension, and some take a day or more to mature (Duketater about 10 hours, Drowsyfern 15, Juicy queenbeet over 2 days on fertilizer), so cutting the run short threw those hours away. A goal whose count or plant age hasn't moved for 2 hours (no reindeer coming in, a plant that died) stops holding, and the infobox says so: "stopped waiting for reindeer (no progress in 2h)"
