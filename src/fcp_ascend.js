@@ -261,15 +261,20 @@ FCP.ascendHolds = function () {
             add("new " + growing[0].name + " seed (" + FCP.shortTime(growing[0].sec) + ")");
         }
     }
-    if (Game.season === "christmas") {
+    // Christmas goals: held during Christmas, and also while FC is away collecting another season's
+    // drops when it can switch seasons (it comes back to Christmas while these are pending).
+    if (Game.season === "christmas" || Game.Has("Season switcher")) {
+        var away = Game.season === "christmas" ? "" :
+            /^(halloween|easter|valentines)$/.test(Game.season) ? " · back after " + Game.seasons[Game.season].name : " · switching back";
         // 200 reindeer in one run.
         if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) {
-            var r = Game.shimmerTypes.reindeer, avg = r && r.maxTime > r.minTime ? (r.minTime + 0.25 * (r.maxTime - r.minTime)) / fps : 0;
-            add("reindeer (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + ")");
+            var r = Game.shimmerTypes.reindeer, rMin = r ? r.getMinTime(r) : 0, rMax = r ? r.getMaxTime(r) : 0;
+            var avg = rMax > rMin ? (rMin + 0.25 * (rMax - rMin)) / fps : 0;
+            add("reindeer (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + away + ")");
         }
         // Santa's final form.
         if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < 14)
-            add("Santa (" + Game.santaLevel + "/14)");
+            add("Santa (" + Game.santaLevel + "/14" + away + ")");
     }
     return holds;
 };

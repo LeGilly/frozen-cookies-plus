@@ -61,6 +61,12 @@ the function names.
   0 under a Pledge, the Covenant or with no grandma. No pledge upgrade raises it. Elder spice and Dragon Guts
   only add slots. `Game.wrinklersPopped` is reset at every ascension (`Game.Reset`, not only hard), so
   Wrinklesquisher (50) and Moistburster (200) must happen within one run.
+- Seasons and golden cookies (`Game.shimmerTypes.golden.getTimeMod`): spawn time x0.95 in Business Day with
+  Startrade, x0.98 in Easter/Halloween/Valentine's with Starspawn/Starterror/Starlove (heavenly, 111,111 chips
+  each, under Season switcher). Christmas has none; Starsnow makes reindeer 5% sooner. FC's spawn model
+  (`getProbabilityModifiers`) leaves all of these out, so `gcPs` is the same in every season. A reindeer pays
+  a minute of production (x2 Ho ho ho-flavored frosting), so it shrinks as golden cookies take over the income.
+  Season switch price: 1e9 + 60 s of unbuffed CpS x 1.5^(switches this run).
 
 ## Dragon
 

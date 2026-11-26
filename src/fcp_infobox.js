@@ -246,6 +246,7 @@ FCP.infoLines = function (t_d) {
         plus.push(["#ff8a65", "Challenge run", FCP.status["Challenge runs"]]);
     if (FrozenCookies.autoLumps && FCP.status["Sugar lumps"]) plus.push(["#c39bff", "Sugar lumps", FCP.status["Sugar lumps"]]);
     if (FrozenCookies.autoGarden && FCP.status["Garden"]) plus.push(["#7ed957", "Garden", FCP.status["Garden"]]);
+    if (FrozenCookies.smartSeason && FCP.status["Season"]) plus.push(["#e57373", "Season", FCP.status["Season"]]);
     if (FCP.status["Endless cycle"]) plus.push(["#90a4ae", "Endless cycle", FCP.status["Endless cycle"]]);
     if (FrozenCookies.autoStocks && FCP.status["Stock market"]) plus.push(["#4fc3f7", "Stock market", FCP.status["Stock market"]]);
     var waiting = FCP.hunterWaiting();

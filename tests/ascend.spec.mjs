@@ -77,6 +77,34 @@ test("Persistent memory comes before Season switcher, and cheaper useful upgrade
   noErrors(errors);
 });
 
+test("the Christmas holds stay while FC is away for another season's drops, with Season switcher only", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    const xmas = () => FCP.ascendHolds().map((h) => h.label).filter((l) => /^(reindeer|Santa)/.test(l));
+    Game.reindeerClicked = 52;
+    Game.Upgrades["A festive hat"].earn();
+    Game.santaLevel = 9;
+    Game.season = "halloween";
+    const noSwitcher = xmas();
+    Game.Upgrades["Season switcher"].earn();
+    const halloween = xmas();
+    Game.season = "fools";
+    const fools = xmas();
+    Game.season = "christmas";
+    const christmas = xmas();
+    Game.season = "";
+    return { noSwitcher, halloween, fools, christmas };
+  });
+  expect(r.noSwitcher).toEqual([]);
+  expect(r.halloween).toHaveLength(2);
+  expect(r.halloween[0]).toMatch(/^reindeer \(52\/200, \d.* · back after Halloween\)$/);
+  expect(r.halloween[1]).toBe("Santa (9/14 · back after Halloween)");
+  expect(r.fools[1]).toBe("Santa (9/14 · switching back)");
+  expect(r.christmas[1]).toBe("Santa (9/14)");
+  expect(r.christmas[0]).toMatch(/^reindeer \(52\/200, \d[^·]*\)$/);
+  noErrors(errors);
+});
+
 test("a run ready to ascend waits for one-time goals still in reach, at most 8 hours", async ({ page }) => {
   test.setTimeout(150_000);
   const errors = await loadGame(page);

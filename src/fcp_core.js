@@ -124,6 +124,11 @@ FCP.preferenceValues = {
         display: ["Smart ascension OFF", "Smart ascension ON"],
         default: 0,
     },
+    smartSeason: {
+        hint: "Smart season: the season FC rests in once it has the drops is chosen by what pays. Christmas while this run still needs it (200 reindeer, Santa's levels, the reindeer drops), then the season with the most extra income: reindeer in Christmas, or more golden cookies with a Star heavenly upgrade (Startrade: +5% in Business Day; Starspawn, Starterror, Starlove: +2%). Needs Autobuy Seasons (see fcp_season.js).",
+        display: ["Smart season OFF", "Smart season ON"],
+        default: 0,
+    },
     bankRules: {
         hint: "Bank rules: FC's extra upgrades, the Halloween switch and reward cookie buildings wait for the golden cookie bank; the Golden switch and the Godzamok combo only fire when the extra clicking (at your measured click speed) beats their cost; the Easter switch during a Cookie Storm only while cheap (see fcp_bankrules.js).",
         display: ["Bank rules OFF", "Bank rules ON"],
@@ -304,12 +309,12 @@ recommendedSettingsAction = function () {
         FrozenCookies.firstRunScoring = 1;
         FrozenCookies.measuredClicks = 1;
         FrozenCookies.insights = 1;
-        // Rest in Christmas, not Business Day: reindeer bring a minute of production each (about
-        // +25% income, up to +100% with Reindeer baking grounds and Ho ho ho-flavored frosting),
-        // and 200 reindeer and Santa's last level must happen within one run. Business Day only
-        // helps with Startrade (+5% golden cookies). FC still visits the other seasons for their
-        // drops and comes back.
+        // Start in Christmas: 200 reindeer and Santa's last level must happen within one run.
+        // Smart season then picks the season that pays once those are done (fcp_season.js):
+        // reindeer early, when production is most of the income; Business Day with Startrade
+        // late, when golden cookies are. FC still visits the other seasons for their drops.
         FrozenCookies.defaultSeason = 2;
+        FrozenCookies.smartSeason = 1;
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;
