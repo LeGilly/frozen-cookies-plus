@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.12.13 · 2026-11-26
+### Changed
+- Smart ascension no longer gives up on one-time goals after 8 hours (10 for a goal nearly done): it waits for them however long they take, as long as they keep advancing. A new seed's plant is lost at ascension, and some take a day or more to mature (Duketater about 10 hours, Drowsyfern 15, Juicy queenbeet over 2 days on fertilizer), so cutting the run short threw those hours away. A goal whose count or plant age hasn't moved for 2 hours (no reindeer coming in, a plant that died) stops holding, and the infobox says so: "stopped waiting for reindeer (no progress in 2h)"
+- While a new seed's plant grows, the garden uses fertilizer (growth every 3 minutes) instead of woodchips (every 5), so it matures about 40% sooner; woodchips come back for breeding once it is harvested
+
 ## 1.12.12 · 2026-11-26
 ### Added
 - The infobox shows everything spent in the last minute and by whom, biggest first: "Spent last minute 2.1 quindecillion: Cereals stock 1.4 quindecillion (FC+ stocks) · 12× Cursor 0.5 quindecillion (FC) · …". Buying next only names FC's next pick, while FC also buys buildings in bulk and FC+ buys stocks, seeds and research, so the cookie count could drop with nothing on screen saying why. Stocks, brokers and seeds are now named instead of "something"

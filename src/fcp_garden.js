@@ -183,6 +183,15 @@ FCP.plant = function (G, key, x, y) {
     return FCP.withSpend("spendItem", p.name + " seed", G.useTool, G, [p.id, x, y]);
 };
 
+// Is a plant whose seed we don't have yet growing on the plot (not mature yet)?
+FCP.newSeedGrowing = function (G) {
+    for (var y = 0; y < 6; y++) for (var x = 0; x < 6; x++) {
+        var tile = G.plot[y][x], plant = tile[0] > 0 ? G.plantsById[tile[0] - 1] : null;
+        if (plant && !plant.unlocked && tile[1] < plant.mature) return plant;
+    }
+    return null;
+};
+
 FCP.gardenTick = function () {
     if (FCP.busy() || !FrozenCookies.autoGarden) return;
     var G = FCP.garden();
@@ -195,7 +204,11 @@ FCP.gardenTick = function () {
     if (!target) return FCP.gardenIdle(G, b);
 
     var weeds = target.recipe.layout === "weeds";
-    if (weeds) FCP.setSoil(G, farms >= 50 ? "fertilizer" : "dirt");
+    // A new seed's plant growing: fertilizer (3-minute growth ticks instead of woodchips' 5) gets
+    // it to maturity about 40% sooner. The seed only unlocks when it is harvested mature, and the
+    // plot is cleared at ascension, so its growth is what holds the run (smart ascension).
+    var newSeed = FCP.newSeedGrowing(G);
+    if (weeds || newSeed) FCP.setSoil(G, farms >= 50 ? "fertilizer" : "dirt");
     else FCP.setSoil(G, farms >= 300 ? "woodchips" : farms >= 50 ? "fertilizer" : "dirt");
 
     var grid = FCP.gardenLayout(G, target.recipe);
@@ -240,7 +253,8 @@ FCP.gardenTick = function () {
               ? "2× " + G.plants[target.recipe.p[0]].name
               : target.recipe.p.map(function (k) { return G.plants[k].name; }).join(" + ")) + ")"
         : " (weeds)";
-    FCP.status["Garden"] = "breeding " + G.plants[target.key].name + parents + " · seeds " + G.plantsUnlockedN + "/" + G.plantsN;
+    FCP.status["Garden"] = (newSeed ? "growing a new " + newSeed.name + " (fertilizer) · " : "") +
+        "breeding " + G.plants[target.key].name + parents + " · seeds " + G.plantsUnlockedN + "/" + G.plantsN;
 };
 
 FCP.gardenIdle = function (G, b) {

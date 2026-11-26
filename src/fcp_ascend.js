@@ -182,12 +182,11 @@ FCP.patchHeavenlyBuy = function () {
 // They only count within one run (research, pledges, the reindeer count, Santa's level and the
 // garden plot all reset at every ascension), and prestige doubles quickly, so they could be cut short forever.
 // When the run is ready to ascend, it waits for the ones still in reach, once each (until the
-// achievement is won) and at most FCP.HOLD_HOURS per run.
-FCP.HOLD_HOURS = 8;
-// A goal whose estimate ends within this much after the 8 hours still gets waited for: cutting
-// it off when it is nearly done wastes the hours already spent on it. Estimates (reindeer,
-// plant growth) drift, so the limit follows them, but never goes past 8 + 2 hours in all.
-FCP.HOLD_GRACE_HOURS = 2;
+// achievement is won), for as long as they take: a new seed can need a day to mature, and
+// ascending throws away the hours already spent. A goal only holds while it advances, though:
+// one whose count (reindeer, pops, pledges, research, Santa) or plant age hasn't moved for
+// FCP.HOLD_STALL_HOURS stops holding (FCP.liveHolds), so a stuck goal can't keep the run forever.
+FCP.HOLD_STALL_HOURS = 2;
 // Research steps left up to and including `target` (default Elder Pact, the last one).
 FCP.researchSteps = function (target) {
     var chain = FCP.researchChain.concat(["Elder Pact"]), i = chain.indexOf(target || "Elder Pact");
@@ -247,8 +246,12 @@ FCP.addTask("research", function () { return !!(FrozenCookies.smartAscend || Fro
 FCP.ascendHolds = function () {
     var holds = [], fps = Game.fps, lastSec = 0;
     var eta = function (sec) { lastSec = sec; return sec > 0 ? ", " + FCP.shortTime(sec) : ""; };
-    // Each goal keeps the estimate given to eta() in its label (0: none).
-    var add = function (label) { holds.push({ label: label, sec: lastSec }); lastSec = 0; };
+    // Each goal keeps the estimate given to eta() in its label (0: none), and a number that
+    // moves while it advances (`stall`: how long it may stand still, if not the usual).
+    var add = function (label, key, progress, stall) {
+        holds.push({ label: label, sec: lastSec, key: key, progress: progress, stall: stall || FCP.HOLD_STALL_HOURS * 3600 });
+        lastSec = 0;
+    };
     // Research for the elder achievements: up to One mind for the wrinkler ones, up to Elder Pact
     // for the pledge ones (FCP.RESEARCH_GOALS); the furthest target still needed is waited for.
     // Only with Persistent memory (research 10x as fast, about 30 minutes in all): without it, the
@@ -260,19 +263,19 @@ FCP.ascendHolds = function () {
             var steps = FCP.researchSteps(target),
                 per = Game.baseResearchTime / 10;
             add("research (" + steps + " to " + target + eta((steps * per) / fps) + " · for " + missing[0] +
-                (missing.length > 1 ? " +" + (missing.length - 1) : "") + ")");
+                (missing.length > 1 ? " +" + (missing.length - 1) : "") + ")", "research", -steps);
         }
     }
     // Elder Pledges: 10 in one run (Elder slumber, Elder calm, Sacrificial rolling pins), a few
     // seconds each with the Covenant cycle (fcp_achievements.js).
     if (FrozenCookies.elderPledgeAchievs && Game.Has("Elder Pact") && FCP.pledgesWanted())
-        add("pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")");
+        add("pledges (" + Game.pledges + "/" + FCP.PLEDGE_GOAL + eta((FCP.PLEDGE_GOAL - Game.pledges) * 4) + ")", "pledges", Game.pledges);
     // 50 and 200 wrinklers popped in one run (Wrinklesquisher, Moistburster): the Achievement Hunter
     // pops them as they come out (fcp_achievements.js). Waited for once wrinklers can spawn.
     var pops = FrozenCookies.achievementHunter ? FCP.popTarget() : 0;
     if (pops && Game.Has("One mind") && Game.wrinklersPopped < pops) {
         var rate = FCP.wrinklerSpawnRate();
-        add("pops (" + Game.wrinklersPopped + "/" + pops + eta(rate > 0 ? (pops - Game.wrinklersPopped) / rate : 0) + ")");
+        add("pops (" + Game.wrinklersPopped + "/" + pops + eta(rate > 0 ? (pops - Game.wrinklersPopped) / rate : 0) + ")", "pops", Game.wrinklersPopped);
     }
     // A new seed growing in the garden: the plot is cleared at ascension, and its seed only
     // unlocks when it is harvested mature. Mutations can take days of breeding to show up.
@@ -283,13 +286,18 @@ FCP.ascendHolds = function () {
             var tile = G.plot[y][x], plant = tile[0] > 0 ? G.plantsById[tile[0] - 1] : null;
             if (plant && !plant.unlocked && tile[1] < plant.mature) {
                 var perStep = plant.ageTick + (plant.ageTickR || 0) / 2;
-                growing.push({ name: plant.name, sec: perStep > 0 ? ((plant.mature - tile[1]) / perStep) * G.stepT : 0 });
+                growing.push({ name: plant.name, age: tile[1], perStep: perStep,
+                    sec: perStep > 0 ? ((plant.mature - tile[1]) / perStep) * G.stepT : 0 });
             }
         }
         if (growing.length) {
             growing.sort(function (a, b) { return a.sec - b.sec; });
-            lastSec = growing[0].sec;
-            add("new " + growing[0].name + " seed (" + FCP.shortTime(growing[0].sec) + ")");
+            var g = growing[0];
+            lastSec = g.sec;
+            // Slow plants gain a point of age only every few growth ticks (Juicy queenbeet: about
+            // one an hour): allow 4 points' worth of ticks without growth, at least the usual.
+            var stall = g.perStep > 0 ? Math.max(FCP.HOLD_STALL_HOURS * 3600, (4 / g.perStep) * G.stepT) : 0;
+            add("new " + g.name + " seed (" + FCP.shortTime(g.sec) + ")", "seed " + g.name, g.age, stall);
         }
     }
     // Christmas goals: held during Christmas, and also while FC is away collecting another season's
@@ -300,33 +308,34 @@ FCP.ascendHolds = function () {
         // 200 reindeer in one run (fcp_season.js has the Christmas numbers).
         if (FCP.reindeerWanted()) {
             var left = FCP.REINDEER_GOAL - Game.reindeerClicked;
-            add("reindeer (" + Game.reindeerClicked + "/" + FCP.REINDEER_GOAL + eta(left * FCP.reindeerSeconds()) + away + ")");
+            add("reindeer (" + Game.reindeerClicked + "/" + FCP.REINDEER_GOAL + eta(left * FCP.reindeerSeconds()) + away + ")", "reindeer", Game.reindeerClicked);
         }
         // Santa's final form.
         if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < FCP.santaMax())
-            add("Santa (" + Game.santaLevel + "/" + FCP.santaMax() + away + ")");
+            add("Santa (" + Game.santaLevel + "/" + FCP.santaMax() + away + ")", "Santa", Game.santaLevel);
     }
     return holds;
 };
-// When this run started waiting (kept through a reload of the game).
-// Seconds the run may still wait for its goals: 8 hours from when it started waiting, stretched
-// to cover a goal estimated to finish within the 2 extra hours.
-FCP.holdLeft = function (holds) {
-    var elapsed = (Date.now() - FCP.holdSince()) / 1000, limit = FCP.HOLD_HOURS * 3600;
-    var maxLimit = (FCP.HOLD_HOURS + FCP.HOLD_GRACE_HOURS) * 3600;
-    (holds || []).forEach(function (h) {
-        var finish = elapsed + (h.sec || 0);
-        if (h.sec > 0 && finish > limit && finish <= maxLimit) limit = finish;
+// The goals still advancing: {live, stalled}. When each goal's number last moved is kept for the
+// run (through a reload of the game); a goal that hasn't moved for its `stall` seconds is stalled.
+FCP.liveHolds = function (holds) {
+    var seen = FCP.runStore("fcpHoldProgress", { goals: {} }), now = Date.now(), changed = false;
+    var live = [], stalled = [];
+    holds.forEach(function (h) {
+        var e = seen.goals[h.key];
+        if (!e || e.p !== h.progress) {
+            e = seen.goals[h.key] = { p: h.progress, t: now };
+            changed = true;
+        }
+        (now - e.t < h.stall * 1000 ? live : stalled).push(h);
     });
-    return limit - elapsed;
+    if (changed) FCP.store("fcpHoldProgress", seen);
+    return { live: live, stalled: stalled };
 };
-FCP.holdSince = function () {
-    var saved = FCP.runStore("fcpAscendHold");
-    if (!saved.since) {
-        saved.since = Date.now();
-        FCP.store("fcpAscendHold", saved);
-    }
-    return saved.since;
+// Seconds until the run is expected to ascend for its goals: the longest estimate among those
+// still advancing (Infinity if one has none), 0 when nothing holds it.
+FCP.holdLeft = function (holds) {
+    return FCP.liveHolds(holds).live.reduce(function (m, h) { return Math.max(m, h.sec > 0 ? h.sec : Infinity); }, 0);
 };
 
 // --- When to ascend -----------------------------------------------------------
@@ -391,15 +400,15 @@ FCP.ascendTick = function () {
         FCP.status["Ascension"] = "ready · checking goals (game still loading)";
         return;
     }
-    // Worth it, but first the one-time goals this run can still finish (at most 8 hours).
-    var holds = FCP.ascendHolds();
-    if (holds.length) {
-        var waitLeft = FCP.holdLeft(holds);
-        if (waitLeft > 0) {
-            FCP.status["Ascension"] = "ready · waiting: " + holds.map(function (h) { return h.label; }).join(", ") +
-                " · max " + FCP.shortTime(waitLeft);
-            return;
-        }
+    // Worth it, but first the one-time goals this run can still finish, while they advance.
+    var held = FCP.liveHolds(FCP.ascendHolds());
+    var stalled = held.stalled.length
+        ? " · stopped waiting for " + held.stalled.map(function (h) { return h.label.replace(/ \(.*$/, ""); }).join(", ") +
+          " (no progress in " + FCP.HOLD_STALL_HOURS + "h)"
+        : "";
+    if (held.live.length) {
+        FCP.status["Ascension"] = "ready · waiting: " + held.live.map(function (h) { return h.label; }).join(", ") + stalled;
+        return;
     }
     // Wait out a combo, pop the wrinklers, then go.
     if (cpsBonus() > 1 || hasClickBuff()) {

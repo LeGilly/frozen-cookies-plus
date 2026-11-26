@@ -134,24 +134,28 @@ test("the Christmas holds stay while FC is away for another season's drops, with
   noErrors(errors);
 });
 
-test("a run ready to ascend waits for one-time goals still in reach, at most 8 hours", async ({ page }) => {
+test("a run ready to ascend waits for one-time goals still advancing, and goes once they stall", async ({ page }) => {
   test.setTimeout(150_000);
   const errors = await loadGame(page);
-  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpAscendHold"); });
+  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpHoldProgress"); });
   await setOptions(page, { smartAscend: 1, challengeRuns: 0, autoBuy: 0, autoReindeer: 0 });
   await page.evaluate(() => { Game.season = "christmas"; Game.seasonT = Game.fps * 3600 * 24; Game.reindeerClicked = 10;
     Game.Earn(Game.HowManyCookiesReset(250) - Game.cookiesReset); });
-  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready · waiting: reindeer \(10\/200, .+\) · max 7h 59m/);
+  await expect.poll(() => page.evaluate(() => FCP.status["Ascension"]), { timeout: 10_000 }).toMatch(/^ready · waiting: reindeer \(10\/200, [^)]+\)$/);
   expect(await page.evaluate(() => Game.resets)).toBe(0);
-  // 8 hours later: it goes.
-  await page.evaluate(() => localStorage.setItem("fcpAscendHold", JSON.stringify({ run: String(Game.startDate), since: Date.now() - 8.1 * 3600e3 })));
+  // No reindeer for 2 hours: it stops waiting for them and goes.
+  await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("fcpHoldProgress"));
+    saved.goals.reindeer.t = Date.now() - 2.1 * 3600e3;
+    localStorage.setItem("fcpHoldProgress", JSON.stringify(saved));
+  });
   await page.waitForFunction(() => Game.resets === 1, null, { timeout: 120_000 });
   noErrors(errors);
 });
 
 test("at boot, nothing is decided before the minigames are loaded (a seed in the garden holds it)", async ({ page }) => {
   const errors = await loadGame(page);
-  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpAscendHold"); });
+  await page.evaluate(() => { Game.prestige = 100; Game.cookiesReset = Game.HowManyCookiesReset(100); localStorage.removeItem("fcpHoldProgress"); });
   await page.evaluate(() => { Game.Objects.Farm.level = Math.max(1, Game.Objects.Farm.level); Game.LoadMinigames(); });
   await page.waitForFunction(() => Game.Objects.Farm.minigameLoaded);
   // As right after a relaunch: the garden script not loaded yet, the run ready to ascend.
@@ -171,15 +175,34 @@ test("at boot, nothing is decided before the minigames are loaded (a seed in the
   noErrors(errors);
 });
 
-test("a goal nearly done when the 8 hours run out gets up to 2 more hours", async ({ page }) => {
+test("goals hold the run for as long as they advance, and stop holding after 2 hours without progress", async ({ page }) => {
   const errors = await loadGame(page);
-  const left = await page.evaluate(() => {
-    localStorage.setItem("fcpAscendHold", JSON.stringify({ run: String(Game.startDate), since: Date.now() - 7.5 * 3600e3 }));
-    const h = (sec) => Math.round(FCP.holdLeft([{ label: "x", sec }]) / 60);
-    return { none: h(0), soon: h(10 * 60), close: h(90 * 60), far: h(3 * 3600), mixed: Math.round(FCP.holdLeft([{ sec: 90 * 60 }, { sec: 3 * 3600 }]) / 60) };
+  const r = await page.evaluate(() => {
+    localStorage.removeItem("fcpHoldProgress");
+    const seed = { label: "new Cronerice seed (4h 46m)", key: "seed Cronerice", progress: 10, sec: 4.77 * 3600, stall: 2 * 3600 };
+    const reindeer = { label: "reindeer (88/200, 3h 34m)", key: "reindeer", progress: 88, sec: 3.57 * 3600, stall: 2 * 3600 };
+    const first = FCP.liveHolds([seed, reindeer]).live.length;
+    const left = FCP.holdLeft([seed, reindeer]) / 3600;
+    // Three hours later: the seed grew, the reindeer count didn't move.
+    const saved = JSON.parse(localStorage.getItem("fcpHoldProgress"));
+    Object.values(saved.goals).forEach((g) => { g.t -= 3 * 3600e3; });
+    localStorage.setItem("fcpHoldProgress", JSON.stringify(saved));
+    const later = FCP.liveHolds([Object.assign({}, seed, { progress: 30 }), reindeer]);
+    // A reindeer comes: it holds again.
+    const back = FCP.liveHolds([reindeer, Object.assign({}, reindeer, { progress: 89 })].slice(1)).live.length;
+    return {
+      first, left: Math.round(left * 100) / 100,
+      live: later.live.map((h) => h.key), stalled: later.stalled.map((h) => h.key), back,
+      none: FCP.holdLeft([]), unknown: FCP.holdLeft([{ label: "Santa (9/14)", key: "Santa", progress: 9, sec: 0, stall: 7200 }]),
+    };
   });
-  // Minutes left, 7h30 into the wait.
-  expect(left).toEqual({ none: 30, soon: 30, close: 90, far: 30, mixed: 90 });
+  expect(r.first).toBe(2);
+  expect(r.left).toBe(4.77); // the longest estimate, past the old 8-hour limit if need be
+  expect(r.live).toEqual(["seed Cronerice"]);
+  expect(r.stalled).toEqual(["reindeer"]);
+  expect(r.back).toBe(1);
+  expect(r.none).toBe(0);
+  expect(r.unknown).toBe(Infinity); // no estimate: not soon
   noErrors(errors);
 });
 

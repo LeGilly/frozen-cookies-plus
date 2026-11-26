@@ -67,6 +67,12 @@ the function names.
   (`getProbabilityModifiers`) leaves all of these out, so `gcPs` is the same in every season. A reindeer pays
   a minute of production (x2 Ho ho ho-flavored frosting), so it shrinks as golden cookies take over the income.
   Season switch price: 1e9 + 60 s of unbuffed CpS x 1.5^(switches this run).
+- Garden (minigameGarden.js): a plant's seed unlocks only when it is harvested mature (or, on pebbles, 35% of
+  the time when it dies of old age), and the plot is cleared at every ascension (`M.reset`). Growth per tick:
+  `ageTick + ageTickR × random`, ticks every 3 min on fertilizer, 5 on dirt and woodchips, 15 on clay. Time to
+  mature (fertilizer / woodchips): Juicy queenbeet 53h / 88h, Drowsyfern 15h / 25h, Everdaisy 12.5h / 21h,
+  Duketater 10.6h / 17.6h, Elderwort 8.2h / 13.6h, Tidygrass 4h / 6.7h, Cronerice 3.7h / 6.1h, Queenbeet 3.3h /
+  5.6h, every other plant under 2.1h / 3.5h.
 - FC's season visits: it never leaves a season before `haveAll(season)` (all its drops this run), then goes to
   any season with drops missing, else the resting one. Its Cookie storm switch to Easter (`autoEasterAction`)
   ignores that order, so FC+ switches back after the storm (fcp_season.js).

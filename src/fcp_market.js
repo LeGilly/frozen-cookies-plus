@@ -43,8 +43,7 @@ FCP.ascensionSoon = function () {
     if (!FrozenCookies.smartAscend || !FCP.ascendTarget || Game.ascensionMode == 1) return false;
     var horizon = FCP.STOCK_MIN_HOURS * 3600;
     if (FCP.runLevels() >= FCP.ascendTarget()) {
-        // Ready: only one-time goals can still hold it, for what is left of their 8 hours.
-        if (!FCP.ascendHolds().length) return true;
+        // Ready: only one-time goals still advancing can hold it, for as long as they take.
         return FCP.holdLeft(FCP.ascendHolds()) < horizon;
     }
     var rate = FCP.cookieRate();

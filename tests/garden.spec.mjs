@@ -27,3 +27,33 @@ test("the garden bot unlocks all seeds and sacrifices the garden for Seedless to
   expect(result.seedless).toBe(true);
   noErrors(errors);
 });
+
+test("a new seed's plant grows on fertilizer, and the ascension waits for it however long it takes", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e30, buildings: 400, lumps: 2000 });
+  await setOptions(page, { autoLumps: 2 });
+  await expect.poll(() => page.evaluate(() => Game.Objects.Farm.level), { timeout: 20_000 }).toBeGreaterThanOrEqual(9);
+  await setOptions(page, { autoGarden: 1 });
+  await page.waitForFunction(() => Game.Objects.Farm.minigame && Game.Objects.Farm.minigame.plot);
+  const r = await page.evaluate(() => {
+    const G = Game.Objects.Farm.minigame;
+    const soilKey = () => G.soilsById[G.soil].key;
+    G.nextSoil = 0;
+    FCP.gardenTick();
+    const breeding = soilKey();
+    // A Duketater appears (17.6 hours on woodchips): the seed isn't ours yet.
+    const p = G.plants.duketater;
+    p.unlocked = 0;
+    G.plot[0][0] = [p.id + 1, 5];
+    G.nextSoil = 0;
+    FCP.gardenTick();
+    const growing = soilKey();
+    const hold = FCP.ascendHolds().map((h) => h.label).filter((l) => /seed/.test(l))[0];
+    return { breeding, growing, hold, status: FCP.status["Garden"] };
+  });
+  expect(r.breeding).toBe("woodchips");
+  expect(r.growing).toBe("fertilizer");
+  expect(r.hold).toMatch(/^new Duketater seed \(\d+h/);
+  expect(r.status).toMatch(/^growing a new Duketater \(fertilizer\)/);
+  noErrors(errors);
+});
