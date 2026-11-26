@@ -60,7 +60,7 @@ the surprises found so far) and [`TODO.md`](TODO.md) (where work stands and what
 | `src/fcp_lumps.js` | Sugar lumps: minigames first (needs the building owned), then the minigame levels (Farm 9, Cursor 12 for the bank offices, Bank 10), then every building to 10 costliest down, then best CpS per lump once every building is owned |
 | `src/fcp_market.js` | Stock trading: buys low, sells only above what was paid with fees (`FCP.stockPaid`), hires brokers when this run's volume pays for them (`FCP.brokerWorth`), stops buying and takes any profit within 2 hours of a smart ascension (`FCP.ascensionSoon`), since the market is wiped at ascension |
 | `src/fcp_garden.js` | Garden breeder (recipes mirror the game's `M.getMuts`), harvest farming, the sacrifice. Rebuilds the plot from scratch every tick, so an emptied plot (ascension) needs nothing special; fertilizer while a new seed's plant grows (`FCP.newSeedGrowing`) |
-| `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`). Burst buying: more units and up to 10 extra purchases per autoCookie round when the spare cookies cover the next purchase 10 times |
+| `src/fcp_bulk.js` | Smart bulk buy: caps FC's building purchases (wraps `autoCookie` and `safeBuy`). Burst buying: more units and up to 10 extra purchases per autoCookie round when the spare cookies cover the next purchase 10 times; achievement building caps: swaps FC's Mine/Factory/Wizard tower caps up to 700 while `buildingStats`, `autoGodzamokAction` and `autoCookie` run (`FCP.withLiftedCaps`), and keeps `restoreBuildingLimits` from selling towers |
 | `src/fcp_upgrades.js` | Upgrade tracker: upgrades the run is missing for the game's "Upgrades unlocked" stat, grouped by where they come from (`FCP.upgradeSource`), shown in the FC menu and summed up in the infobox. Read-only |
 | `src/fcp_scoring.js` | First-run scoring: Cookie Monster's payback period before the first ascension (wraps `purchaseEfficiency`). Research chain scoring wraps `upgradeStats`: chain upgrades are scored with the next research (toggled with `upgradeToggle` and put back) |
 | `src/fcp_clicks.js` | Measured click speed (wraps `baseClickingCps`); the shared click helpers: `FCP.autoclicking()`, `FCP.realClickRate()` (clicks/s really happening), `FCP.cookieRate()` (for estimates) |
@@ -164,7 +164,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 The tests can't run the Steam app itself; after a release, check once in the game.
 
 Run locally: `rm -rf Steam dist; CI=1 CHROME_PATH=/usr/bin/google-chrome npm test -- --workers=2` (about 4 minutes,
-91 tests at 1.13.0). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
+93 tests at 1.13.1). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
 (`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay, and counts
 FC+ console warnings and errors (`[FC+] ...`) with the page errors, so `noErrors` fails on them too. Tests that
 wait on FC's intervals can be slow when the whole suite runs at once: give them generous poll timeouts.

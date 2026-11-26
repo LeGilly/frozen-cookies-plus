@@ -63,3 +63,49 @@ test("burst buying: a windfall is spent several purchases at a time, above the b
   expect(await page.evaluate(() => Game.cookies >= delayAmount() * 0.999)).toBe(true);
   noErrors(errors);
 });
+
+test("FC's Mine, Factory and Wizard tower caps are lifted to 700 while FC decides, once that's cheap; settings stay", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e60 });
+  const r = await page.evaluate(() => {
+    Object.assign(FrozenCookies, { mineLimit: 1, mineMax: 500, factoryLimit: 1, factoryMax: 500, towerLimit: 1, manaMax: 37 });
+    Game.Objects.Mine.amount = 500; Game.Objects.Factory.amount = 500; Game.Objects["Wizard tower"].amount = 650;
+    // The buildings FC considers buying (a capped one is left out).
+    const blocked = () => { buildingStats(true); return FrozenCookies.caches.buildings.map((b) => b.id); };
+    FrozenCookies.smartCaps = 0;
+    const off = blocked();
+    FrozenCookies.smartCaps = 1;
+    const on = blocked();
+    const settings = [FrozenCookies.mineMax, FrozenCookies.factoryMax, FrozenCookies.towerLimit];
+    FCP.capsTick();
+    // Not affordable: the caps stay.
+    Game.cookies = 1;
+    const poor = FCP.capLift();
+    return { off, on, settings, status: FCP.status["Building caps"], poor };
+  });
+  // FC leaves the capped buildings out of its list: Mine 3, Factory 4 (and the towers once the Grimoire is there).
+  expect(r.off).not.toContain(3);
+  expect(r.off).not.toContain(4);
+  expect(r.on).toContain(3);
+  expect(r.on).toContain(4);
+  expect(r.settings).toEqual([500, 500, 1]);
+  expect(r.status).toMatch(/^mines 500, factories 500, wizard towers 650 → 700/);
+  expect(r.poor).toEqual({ Mine: false, Factory: false, "Wizard tower": false });
+  noErrors(errors);
+});
+
+test("FC's reward-cookie limit restore never sells Wizard towers down to the 37 max-magic setting", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page);
+  const r = await page.evaluate(() => {
+    Object.assign(FrozenCookies, { towerLimit: 1, manaMax: 37, mineLimit: 1, mineMax: 50 });
+    const towers = Game.Objects["Wizard tower"].amount;
+    restoreBuildingLimits();
+    return { before: towers, after: Game.Objects["Wizard tower"].amount, mines: Game.Objects.Mine.amount, tl: FrozenCookies.towerLimit };
+  });
+  expect(r.before).toBeGreaterThan(37);
+  expect(r.after).toBe(r.before);
+  expect(r.mines).toBeLessThanOrEqual(50); // the other limits still apply
+  expect(r.tl).toBe(1);
+  noErrors(errors);
+});

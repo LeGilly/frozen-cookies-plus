@@ -117,3 +117,72 @@ safeBuy = function (bldg, count) {
     FCP.lastSmartBulk = { name: bldg.name, asked: count, bought: n, bank: bank, cookiesAfter: Game.cookies };
     return r;
 };
+
+// Building caps for achievements. FC's recommended settings stop buying Mines and Factories at 500
+// (for its Godzamok combo, which sells them all and buys them back) and Wizard towers once max
+// magic reaches 37. Every building has count achievements every 50 up to 700, and having 550 to
+// 700 of every building wins the "...centennial" achievements and unlocks a butter biscuit (a CpS
+// upgrade) each run, so the caps blocked both for good. Late in the game they cost nothing to
+// lift: FC+ raises the Mine and Factory caps to 700 (Godzamok then sells and buys back 700) and
+// lifts the Wizard tower one until 700, as soon as buying up to 700 fits in the cookies it can
+// spare. Your own settings are left as they are: the caps are only swapped while FC decides.
+FCP.CAP_GOAL = 700;
+FCP.capLift = function () {
+    var lift = { Mine: false, Factory: false, "Wizard tower": false };
+    if (!FrozenCookies.smartCaps) return lift;
+    var reach = function (o) {
+        return o.amount >= FCP.CAP_GOAL || FCP.canSpend(o.getSumPrice(FCP.CAP_GOAL - o.amount));
+    };
+    if (FrozenCookies.mineLimit && FrozenCookies.mineMax < FCP.CAP_GOAL) lift.Mine = reach(Game.Objects.Mine);
+    if (FrozenCookies.factoryLimit && FrozenCookies.factoryMax < FCP.CAP_GOAL) lift.Factory = reach(Game.Objects.Factory);
+    var towers = Game.Objects["Wizard tower"];
+    if (FrozenCookies.towerLimit && towers.amount < FCP.CAP_GOAL) lift["Wizard tower"] = reach(towers);
+    return lift;
+};
+
+// Run an FC function with the lifted caps in place, then put your settings back.
+FCP.withLiftedCaps = function (fn, self, args) {
+    var lift = FCP.capLift(), saved = {
+        mineMax: FrozenCookies.mineMax, factoryMax: FrozenCookies.factoryMax, towerLimit: FrozenCookies.towerLimit,
+    };
+    if (lift.Mine) FrozenCookies.mineMax = FCP.CAP_GOAL;
+    if (lift.Factory) FrozenCookies.factoryMax = FCP.CAP_GOAL;
+    if (lift["Wizard tower"]) FrozenCookies.towerLimit = 0;
+    try {
+        return fn.apply(self, args);
+    } finally {
+        FrozenCookies.mineMax = saved.mineMax;
+        FrozenCookies.factoryMax = saved.factoryMax;
+        FrozenCookies.towerLimit = saved.towerLimit;
+    }
+};
+["buildingStats", "autoGodzamokAction", "autoCookie"].forEach(function (name) {
+    FCP.wrapOnce(window, name, "caps", function (original) {
+        return function () {
+            return FCP.withLiftedCaps(original, this, arguments);
+        };
+    });
+});
+
+// FC's restoreBuildingLimits (after buying a reward cookie) compares the Wizard tower count with
+// the max-magic setting (37) and would sell all but 37 towers: never let it sell towers.
+FCP.wrapOnce(window, "restoreBuildingLimits", "towers", function (original) {
+    return function () {
+        var saved = FrozenCookies.towerLimit;
+        FrozenCookies.towerLimit = 0;
+        try {
+            return original.apply(this, arguments);
+        } finally {
+            FrozenCookies.towerLimit = saved;
+        }
+    };
+});
+
+FCP.capsTick = function () {
+    var lift = FCP.capLift(), names = Object.keys(lift).filter(function (n) { return lift[n]; });
+    FCP.status["Building caps"] = names.length
+        ? names.map(function (n) { return Game.Objects[n].plural + " " + Game.Objects[n].amount; }).join(", ") +
+          " → " + FCP.CAP_GOAL + " (count achievements, butter biscuits)"
+        : "";
+};
+FCP.addTask("caps", function () { return !!FrozenCookies.smartCaps; }, FCP.capsTick, 5000);

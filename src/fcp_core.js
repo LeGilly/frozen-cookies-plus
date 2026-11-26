@@ -141,6 +141,12 @@ FCP.preferenceValues = {
         default: 0,
         recommended: 1,
     },
+    smartCaps: {
+        hint: "Building caps for achievements: FC's Mine and Factory limits (500, for Godzamok) and Wizard tower cap (37 max magic) block the building count achievements and the butter biscuits up to 700. Once buying up to 700 is cheap, FC+ raises them to 700 while FC decides; your settings stay as they are (see fcp_bulk.js).",
+        display: ["Achievement building caps OFF", "Achievement building caps ON"],
+        default: 0,
+        recommended: 1,
+    },
     smartSeason: {
         hint: "Smart season: the season FC rests in once it has the drops is chosen by what pays. Christmas while this run still needs it (200 reindeer, Santa's levels, the reindeer drops), then the season with the most extra income: reindeer in Christmas, or more golden cookies with a Star heavenly upgrade (Startrade: +5% in Business Day; Starspawn, Starterror, Starlove: +2%). Needs Autobuy Seasons (see fcp_season.js).",
         display: ["Smart season OFF", "Smart season ON"],

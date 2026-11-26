@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.13.1 · 2026-11-26
+### Added
+- Achievement building caps (new option, on with Apply recommended options): FC's recommended settings stop buying Mines and Factories at 500, for its Godzamok combo, and Wizard towers once max magic reaches 37. That blocked each building's count achievements from 550 to 700, the "...centennial and a half" to Septcentennial achievements, and the butter biscuits (CpS upgrades) that having 550 to 700 of every building unlocks each run. Late in the game those buildings cost almost nothing (a factory: a ten-thousandth of a second of income), so once buying up to 700 fits in the cookies FC+ can spare, it raises those caps to 700 while FC decides; Godzamok then sells and buys back 700. Your own settings stay as they are
+
+### Fixed
+- After buying a reward cookie (a butter biscuit), FC puts buildings back under their caps, but it compared the Wizard tower count with the max-magic setting (37) and could sell all but 37 towers. FC+ keeps it from selling towers
+
 ## 1.13.0 · 2026-11-26
 ### Changed
 - Sugar lumps go to the levels that help the minigames first, after unlocking them: Farm to 9 (the garden plot grows to its full 6×6), Cursor to 12 (the bank offices need Cursor levels 2, 4, 8, 10 and 12), Bank to 10 (each level raises every stock's value). That is about 180 lumps in all, where the old order spent 266 before the last office. Wizard tower and Temple levels barely help their minigames (about +2 magic from level 1 to 10 with 600 towers; the Pantheon ignores the Temple's level), so they now wait for the round that takes every building to 10, costliest first. The infobox says which office the next Cursor level opens

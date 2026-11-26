@@ -28,7 +28,7 @@ var baseUrl =
 var FrozenCookies = {
     baseUrl: baseUrl,
     branch: "plus",
-    version: "1.13.0", // keep in sync with Steam info.txt (tools/build.mjs reads it from here)
+    version: "1.13.1", // keep in sync with Steam info.txt (tools/build.mjs reads it from here)
     upstreamVersion: "erb-2.052.8",
     modId: "frozen_cookies_plus",
 };
