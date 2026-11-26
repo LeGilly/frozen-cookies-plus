@@ -13,6 +13,8 @@
 FCP.spendSource = ""; // who is spending right now ("" = you, or the game itself)
 FCP.spendItem = ""; // what is being bought right now
 FCP.spends = []; // {amount, item, source} since the last check
+FCP.spendLog = []; // {t, amount, item, source} over the last FCP.SPEND_LOG_SECONDS
+FCP.SPEND_LOG_SECONDS = 60;
 
 FCP.withSpend = function (key, value, fn, self, args) {
     var keep = FCP[key];
@@ -67,8 +69,11 @@ FCP.patchSpendWatch = function () {
     if (!Game.Spend.__fcp) {
         var spend = Game.Spend;
         Game.Spend = function (howmuch) {
-            if (howmuch > 0)
-                FCP.spends.push({ amount: howmuch, item: FCP.spendItem || "something", source: FCP.spendSource });
+            if (howmuch > 0) {
+                var s = { t: Date.now(), amount: howmuch, item: FCP.spendItem || "something", source: FCP.spendSource };
+                FCP.spends.push(s);
+                FCP.spendLog.push(s);
+            }
             return spend.apply(this, arguments);
         };
         Game.Spend.__fcp = true;
@@ -124,6 +129,30 @@ if (typeof autoCookie === "function" && !autoCookie.__fcpBank) {
 }
 
 FCP.bankWatch = { full: false, target: 0, cookies: 0, why: "" };
+
+// Who spent, in plain words.
+FCP.spenderName = function (source) {
+    if (source === "fc") return "FC";
+    if (!source) return "you";
+    var m = /^FC\+ \((.+)\)$/.exec(source);
+    return m ? "FC+ " + m[1] : source;
+};
+
+// What was spent over the last FCP.SPEND_LOG_SECONDS, biggest first: {total, items:
+// [{item, count, amount, who}]}, one entry per thing bought and who bought it.
+FCP.spentLately = function () {
+    var now = Date.now(), byKey = {}, total = 0;
+    FCP.spendLog = FCP.spendLog.filter(function (s) { return now - s.t < FCP.SPEND_LOG_SECONDS * 1000; });
+    FCP.spendLog.forEach(function (s) {
+        var key = s.item + "|" + s.source;
+        var e = byKey[key] || (byKey[key] = { item: s.item, count: 0, amount: 0, who: FCP.spenderName(s.source) });
+        e.count++;
+        e.amount += s.amount;
+        total += s.amount;
+    });
+    var items = Object.keys(byKey).map(function (k) { return byKey[k]; }).sort(function (a, b) { return b.amount - a.amount; });
+    return { total: total, items: items };
+};
 
 FCP.describeSpend = function (spends, keptOldTarget) {
     // The biggest spender of this half second, with everything bought with it.

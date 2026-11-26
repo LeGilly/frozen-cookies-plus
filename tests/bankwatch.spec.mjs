@@ -52,3 +52,23 @@ test("your own purchase, and cookies lost without buying anything", async ({ pag
   await expect.poll(() => why(page), { timeout: 5000 }).toMatch(/^lost .* cookies \(a wrath cookie or a spell backfire\)/);
   noErrors(errors);
 });
+
+test("the infobox lists what was spent in the last minute, by whom, including FC+'s minigame purchases", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e30 });
+  const r = await page.evaluate(() => {
+    FCP.patchSpendWatch();
+    FCP.spendLog = [];
+    Game.Objects.Cursor.buy(1); Game.Objects.Cursor.buy(1); Game.Objects.Cursor.buy(1);
+    FCP.withSpend("spendSource", "FC+ (stocks)", function () { FCP.withSpend("spendItem", "Cereals stock", Game.Spend, Game, [1e29]); });
+    const lately = FCP.spentLately();
+    const line = FCP.infoLines([]).filter((l) => l.label === "Spent last minute")[0];
+    // Older than a minute: gone.
+    FCP.spendLog.forEach((s) => { s.t -= 61000; });
+    return { items: lately.items.map((e) => [e.item, e.count, e.who]), line: line && line.value, after: FCP.spentLately().total };
+  });
+  expect(r.items).toEqual([["Cereals stock", 1, "FC+ stocks"], ["Cursor", 3, "you"]]);
+  expect(r.line).toMatch(/^.+: Cereals stock .+ \(FC\+ stocks\) · 3× Cursor .+ \(you\)$/);
+  expect(r.after).toBe(0);
+  noErrors(errors);
+});

@@ -60,7 +60,7 @@ FCP.brokerWorth = function (B) {
 FCP.hireBrokers = function (B) {
     var hired = 0;
     while (B.brokers < B.getMaxBrokers() && FCP.brokerWorth(B) && FCP.canSpend(B.getBrokerPrice()) && Game.cookies >= B.getBrokerPrice() && hired < 50) {
-        Game.Spend(B.getBrokerPrice());
+        FCP.withSpend("spendItem", "a stock broker", Game.Spend, Game, [B.getBrokerPrice()]);
         B.brokers += 1;
         hired++;
     }
@@ -105,7 +105,7 @@ FCP.stockTick = function () {
             var room = B.getGoodMaxStock(it) - it.stock;
             var unit = Game.cookiesPsRawHighest * val * overhead;
             var n = unit > 0 ? Math.min(room, Math.floor(budget / unit)) : 0;
-            if (n > 0 && B.buyGood(it.id, n)) {
+            if (n > 0 && FCP.withSpend("spendItem", it.name + " stock", B.buyGood, B, [it.id, n])) {
                 FCP.stockVolume(val * n);
                 // Average cost per unit, fees included, over what is held now.
                 var before = it.stock - n, old = FCP.stockPaid(it.id) || val * overhead;

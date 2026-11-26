@@ -262,6 +262,17 @@ FCP.wrinklersWanted = function () {
     return "";
 };
 
+// With this option on, FC+ decides when the elders are calmed: FC's autobuy no longer buys the
+// Elder Pledge, the Covenant or its revoke by itself. It used to pledge whenever that scored well,
+// which stopped wrinklers spawning for 30-60 minutes while the run still needed them.
+FCP.ELDER_TOGGLES = ["Elder Pledge", "Elder Covenant", "Revoke Elder Covenant"];
+FCP.wrapOnce(window, "isUnavailable", "elder", function (original) {
+    return function (upgrade) {
+        if (FrozenCookies.elderPledgeAchievs && upgrade && FCP.ELDER_TOGGLES.indexOf(upgrade.name) !== -1) return true;
+        return original.apply(this, arguments);
+    };
+});
+
 FCP.elderTick = function () {
     if (FCP.busy() || Game.ascensionMode == 1) return;
     var buy = function (name, why) {
@@ -283,7 +294,10 @@ FCP.elderTick = function () {
         if (!covenant) return;
         var wanted = FCP.wrinklersWanted();
         if (wanted) {
+            // No wrinkler spawns under the Covenant or a Pledge: revoke the one, and end the
+            // other (buying the Covenant ends a pledge at once; it is revoked on the next tick).
             if (covenant.bought) buy("Revoke Elder Covenant", "(wrinklers wanted: " + wanted + ")");
+            else if (Game.pledgeT > 0 && covenant.unlocked) buy("Elder Covenant", "(ends the Elder Pledge: wrinklers wanted for " + wanted + ")");
         } else if (Game.Has("Elder Pact") && !covenant.bought) buy("Elder Covenant", "(pledges and pops done: keeps golden cookies golden)");
         return;
     }

@@ -171,6 +171,17 @@ FCP.infoLines = function (t_d) {
         line("#9e9e9e", "Then working toward", chain.name.slice(10) + " (buying its requirements first) · " + eta(need));
     }
 
+    // Everything bought lately, by anyone: FC's own purchases (buildings in bulk, upgrades it
+    // fits in), FC+ (stocks, garden, research...) and you.
+    var spent = FCP.spentLately();
+    if (spent.total > 0) {
+        var top = spent.items.slice(0, 3).map(function (e) {
+            return (e.count > 1 ? e.count + "× " : "") + e.item + " " + Beautify(e.amount) + " (" + e.who + ")";
+        });
+        if (spent.items.length > 3) top.push(spent.items.length - 3 + " more");
+        line("#bdbdbd", "Spent last minute", Beautify(spent.total) + ": " + top.join(" · "));
+    }
+
     if (bankTotal > 0) {
         var pct = Math.min(1, Game.cookies / bankTotal);
         line(

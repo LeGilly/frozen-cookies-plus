@@ -198,3 +198,34 @@ test("a Born Again run you start yourself is never ended by FC+", async ({ page 
   expect(await page.evaluate(() => [Game.ascensionMode, !!Game.OnAscend])).toEqual([1, false]);
   noErrors(errors);
 });
+
+test("with the Elder Pledge option, FC's autobuy leaves the elders alone, and a pledge is ended while wrinklers are wanted", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { buildings: 100 });
+  const r = await page.evaluate(() => {
+    const pledge = Game.Upgrades["Elder Pledge"];
+    FrozenCookies.elderPledgeAchievs = 0;
+    const fcMayOff = !isUnavailable(pledge, []);
+    FrozenCookies.elderPledgeAchievs = 1;
+    const fcMayOn = !isUnavailable(pledge, []);
+    // Pledges done, but Moistburster missing: wrinklers wanted, and a pledge is running.
+    ["Elder nap", "Elder slumber", "Elder calm", "Wrinkler poker", "Wrinklesquisher"].forEach((n) => Game.Win(n));
+    Game.Upgrades["Elder Pact"].earn();
+    Game.Upgrades["Sacrificial rolling pins"].unlock();
+    FrozenCookies.achievementHunter = 1;
+    Game.Unlock("Elder Pledge");
+    pledge.buy(1);
+    const pledgeOn = Game.pledgeT > 0;
+    FCP.elderTick();
+    const covenantBought = !!Game.Upgrades["Elder Covenant"].bought;
+    FCP.elderTick();
+    return { fcMayOff, fcMayOn, pledgeOn, covenantBought, pledgeAfter: Game.pledgeT, covenantAfter: !!Game.Upgrades["Elder Covenant"].bought };
+  });
+  expect(r.fcMayOff).toBe(true);
+  expect(r.fcMayOn).toBe(false);
+  expect(r.pledgeOn).toBe(true);
+  expect(r.covenantBought).toBe(true);
+  expect(r.pledgeAfter).toBe(0);
+  expect(r.covenantAfter).toBe(false);
+  noErrors(errors);
+});

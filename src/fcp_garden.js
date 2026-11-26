@@ -180,7 +180,7 @@ FCP.plant = function (G, key, x, y) {
     if (!p || !p.unlocked || !p.plantable) return false;
     var cost = G.getCost(p);
     if (!FCP.canSpend(cost) || Game.cookies < cost) return false;
-    return G.useTool(p.id, x, y);
+    return FCP.withSpend("spendItem", p.name + " seed", G.useTool, G, [p.id, x, y]);
 };
 
 FCP.gardenTick = function () {

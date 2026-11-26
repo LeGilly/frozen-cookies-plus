@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.12.12 · 2026-11-26
+### Added
+- The infobox shows everything spent in the last minute and by whom, biggest first: "Spent last minute 2.1 quindecillion: Cereals stock 1.4 quindecillion (FC+ stocks) · 12× Cursor 0.5 quindecillion (FC) · …". Buying next only names FC's next pick, while FC also buys buildings in bulk and FC+ buys stocks, seeds and research, so the cookie count could drop with nothing on screen saying why. Stocks, brokers and seeds are now named instead of "something"
+
+### Fixed
+- FC's autobuy bought the Elder Pledge by itself whenever it scored well, which stops wrinklers spawning for 30 to 60 minutes, while the run was still waiting for its 200 wrinkler pops. With the Elder Pledge option on, FC+ now decides alone when the elders are calmed (Pledge, Covenant, Revoke), and ends a running pledge while wrinklers are still wanted
+
 ## 1.12.11 · 2026-11-26
 ### Fixed
 - During a Cookie storm FC switches to Easter for the eggs its cookies drop, but it never leaves a season before it has all its drops: with eggs still missing, the run stayed in Easter and left what it was doing (Christmas reindeer, Halloween wrinklers). FC+ now switches back to the season it was in once the storm ends; the missing eggs are still collected when FC visits Easter later
