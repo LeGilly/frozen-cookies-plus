@@ -20,24 +20,20 @@ FCP.stockMargin = 1.05; // a sale must beat what was paid, fees included, by 5%
 // What each good cost per unit, fees included, when FC+ last bought it (the game only keeps
 // the price before fees). Kept per run in localStorage: the market is reset at ascension.
 FCP.stockPaid = function (id, value) {
-    var key = "fcpStockPaid", run = String(Game.startDate), data = null;
-    try { data = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
-    if (!data || typeof data !== "object" || data.run !== run) data = { run: run };
+    var data = FCP.runStore("fcpStockPaid");
     if (value === undefined) return data[id];
     data[id] = value;
-    try { localStorage.setItem(key, JSON.stringify(data)); } catch (e) {}
+    FCP.store("fcpStockPaid", data);
 };
 
 FCP.STOCK_MIN_HOURS = 2;
 
 // Market dollars of stock FC+ has bought this run (brokers are lost at ascension too).
 FCP.stockVolume = function (add) {
-    var key = "fcpStockVolume", run = String(Game.startDate), d = null;
-    try { d = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
-    if (!d || typeof d !== "object" || d.run !== run) d = { run: run, v: 0 };
+    var d = FCP.runStore("fcpStockVolume", { v: 0 });
     if (add) {
         d.v += add;
-        try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {}
+        FCP.store("fcpStockVolume", d);
     }
     return d.v;
 };

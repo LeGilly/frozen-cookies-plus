@@ -23,9 +23,7 @@ purchaseEfficiency = function (price, deltaCps, baseDeltaCps, currentCps) {
 
 FCP.scoringTick = function () {
     if (!FCP.firstRunScoringActive() || FCP.busy()) return;
-    try {
-        FCP.scoringBank = delayAmount() || 0;
-    } catch (e) {}
+    FCP.scoringBank = FCP.bankTarget();
     FrozenCookies.recalculateCaches = true;
 };
 

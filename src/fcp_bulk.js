@@ -26,24 +26,16 @@ FCP.burstSkip = ["Chocolate egg", "One mind", "Communal brainsweep", "Elder Pact
 
 FCP.burstActive = function () {
     if (!FrozenCookies.burstBuy || !FrozenCookies.autoBuy) return false;
-    var next = null;
-    try { next = nextPurchase(); } catch (e) {}
+    var next = FCP.attempt("next purchase", nextPurchase, null);
     return !!(next && next.cost > 0 && FCP.spare() >= FCP.BURST_FACTOR * next.cost);
 };
 
 // How many of `bldg` to buy, at most `count`.
 FCP.smartBulkCount = function (bldg, count) {
     if (count <= 1) return count;
-    var bank = 0;
-    try {
-        bank = delayAmount() || 0;
-    } catch (e) {}
-    var spare = Game.cookies - bank;
+    var spare = Game.cookies - FCP.bankTarget();
 
-    var list = [];
-    try {
-        list = recommendationList() || [];
-    } catch (e) {}
+    var list = FCP.attempt("recommendation list", recommendationList, null) || [];
     var mine = null,
         alternative = Infinity;
     for (var i = 0; i < list.length; i++) {
@@ -75,8 +67,8 @@ FCP.inAutoCookie = false;
 // More purchases from the ranking FC just used, before it recalculates.
 FCP.burstExtra = function () {
     if (!FCP.burstActive()) return 0;
-    var list = [];
-    try { list = recommendationList() || []; } catch (e) { return 0; }
+    var list = FCP.attempt("recommendation list", recommendationList, null);
+    if (!list) return 0;
     var bought = 0;
     for (var i = 0; i < list.length && bought < FCP.BURST_EXTRA; i++) {
         var r = list[i];
@@ -108,7 +100,7 @@ autoCookie = function () {
     FCP.inAutoCookie = true;
     try {
         var r = _fcpOriginalAutoCookie.apply(this, arguments);
-        try { FCP.burstExtra(); } catch (e) { console.error("[FC+] burst buying failed:", e); }
+        FCP.attempt("burst buying", FCP.burstExtra);
         return r;
     } finally {
         FCP.inAutoCookie = false;
@@ -119,8 +111,7 @@ var _fcpOriginalSafeBuy = safeBuy;
 safeBuy = function (bldg, count) {
     if (!(FCP.inAutoCookie && FrozenCookies.smartBulk && count > 1)) return _fcpOriginalSafeBuy.call(this, bldg, count);
     var n = FCP.smartBulkCount(bldg, count);
-    var bank = 0;
-    try { bank = delayAmount() || 0; } catch (e) {}
+    var bank = FCP.bankTarget();
     var r = _fcpOriginalSafeBuy.call(this, bldg, n);
     // Kept for the tests and for checking in the console.
     FCP.lastSmartBulk = { name: bldg.name, asked: count, bought: n, bank: bank, cookiesAfter: Game.cookies };

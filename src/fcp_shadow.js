@@ -2,8 +2,6 @@
 //  UI tricks (option achievementTricks): Stifling the press, Cookie-dunker, Baby it's old outside.
 //  Shadow achievements (option shadowAchievements): God complex, In her likeness,
 //    Last Chance to See, When the cookies ascend just right.
-
-//  No time like the present (Achievement Hunter): send yourself a gift, redeem it an hour later.
 //  Endless cycle (option ascensionMarathon): ascend at every new prestige level, 1,000 times.
 //  Cheats (option cheatAchievement): Cheated cookies taste awful and Four-leaf cookie, faked for one check.
 // Speed baking and Neverclick are challenge runs (fcp_achievements.js).
@@ -48,23 +46,17 @@ FCP.beforeLogic = function (undo) {
 };
 
 FCP.patchLogic = function () {
-    if (Game.Logic.__fcp) return;
-    var original = Game.Logic;
-    var patched = function () {
-        var undo = [];
-        try {
-            FCP.beforeLogic(undo);
-        } catch (e) {}
-        try {
-            return original.apply(this, arguments);
-        } finally {
-            for (var i = undo.length - 1; i >= 0; i--) {
-                try { undo[i](); } catch (e) {}
+    FCP.wrapOnce(Game, "Logic", "tricks", function (original) {
+        return function () {
+            var undo = [];
+            FCP.attempt("achievement tricks", function () { FCP.beforeLogic(undo); });
+            try {
+                return original.apply(this, arguments);
+            } finally {
+                for (var i = undo.length - 1; i >= 0; i--) FCP.attempt("achievement tricks undo", undo[i]);
             }
-        }
-    };
-    patched.__fcp = true;
-    Game.Logic = patched;
+        };
+    });
 };
 
 // ---------------------------------------------------------------------------
@@ -121,10 +113,10 @@ FCP.inHerLikeness = function () {
         Y.offsetGene(Y.genes[0].id, 1);
     } finally {
         Y.currentGenes = saved;
-        try {
+        FCP.attempt("You customizer redraw", function () {
             Y.render();
             Y.renderPortrait();
-        } catch (e) {}
+        });
     }
 };
 
@@ -203,70 +195,6 @@ FCP.landBank = function (target) {
 };
 
 // ---------------------------------------------------------------------------
-// No time like the present (Achievement Hunter): needs the Wrapping paper heavenly upgrade,
-// 1 billion cookies and a normal run. Send a 1-cookie gift through the game's own gift screen,
-// keep the code, and redeem it once the 1-hour "Gifted out" cooldown is over.
-// ---------------------------------------------------------------------------
-FCP.giftState = function (value) {
-    try {
-        if (value === undefined) return JSON.parse(localStorage.getItem("fcpGift") || "null");
-        if (value === null) localStorage.removeItem("fcpGift");
-        else localStorage.setItem("fcpGift", JSON.stringify(value));
-    } catch (e) {}
-    return value;
-};
-
-FCP.giftTick = function () {
-    if (FCP.giftStep === "close") {
-        if (Game.promptOn) Game.ClosePrompt();
-        FCP.giftStep = null;
-        if (FCP.has("No time like the present")) FCP.log("Redeemed our own gift: 'No time like the present'.");
-        return;
-    }
-    if (FCP.has("No time like the present")) {
-        if (FCP.giftState()) FCP.giftState(null);
-        return;
-    }
-    if (!Game.Has("Wrapping paper") || Game.ascensionMode != 0 || Game.cookies < 1e9) return;
-    var el = function (id) { return document.getElementById(id); };
-    var state = FCP.giftState() || {};
-    var click = function (id) { if (el(id)) el(id).click(); };
-
-    // Steps that continue a prompt we opened.
-    if (Game.promptOn && FCP.giftStep === "send" && el("giftAmount")) {
-        el("giftAmount").value = "1";
-        el("giftAmount").dispatchEvent(new Event("change"));
-        click("promptOption0"); // Wrap: shows the code
-        FCP.giftStep = "copy";
-        return;
-    }
-    if (Game.promptOn && FCP.giftStep === "copy" && el("giftCode") && el("giftCode").value) {
-        FCP.giftState({ code: el("giftCode").value, at: Date.now() });
-        Game.ClosePrompt();
-        FCP.giftStep = null;
-        FCP.log("Sent a 1-cookie gift to redeem in an hour, for 'No time like the present'.");
-        return;
-    }
-    if (Game.promptOn && FCP.giftStep === "redeem" && el("giftCode") && !el("giftCode").readOnly) {
-        el("giftCode").value = state.code;
-        el("giftCode").dispatchEvent(new Event("change"));
-        click("promptOption0");
-        FCP.giftStep = "close";
-        return;
-    }
-    if (Game.promptOn || Game.hasBuff("Gifted out")) return;
-
-    // Codes expire after about 2 days: make a new one if needed, else redeem it.
-    if (!state.code || Date.now() - state.at > 40 * 3600 * 1000) {
-        FCP.giftStep = "send";
-        Game.promptGiftSend();
-    } else {
-        FCP.giftStep = "redeem";
-        Game.promptGiftRedeem();
-    }
-};
-
-// ---------------------------------------------------------------------------
 // Endless cycle: 1,000 ascensions. The game only counts an ascension that gains at least one
 // prestige level, so ascend as soon as the run is worth one more level, and keep going.
 // Each ascension then costs the time to bake one level plus about 6 seconds of animations.
@@ -315,5 +243,4 @@ FCP.shadowTick = function () {
 };
 
 FCP.addTask("shadow", function () { return true; }, FCP.shadowTick, 2000);
-FCP.addTask("gift", function () { return !!FrozenCookies.achievementHunter; }, FCP.giftTick, 2000);
 FCP.addTask("marathon", function () { return !!FrozenCookies.ascensionMarathon; }, FCP.marathonTick, 500);

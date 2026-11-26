@@ -7,6 +7,8 @@ const BUNDLE = readFileSync(new URL("../Steam/FrozenCookiesPlus/main.js", import
 export async function loadGame(page) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
+  // FC+ reports a failure it recovered from (FCP.attempt, FCP.safe) in the console: count those too.
+  page.on("console", (m) => { if (/^\[FC\+\]/.test(m.text()) && (m.type() === "warning" || m.type() === "error")) errors.push(m.text()); });
   // The game would call ad and analytics servers: the tests stay offline.
   await page.route(/^https?:\/\/(?!localhost)/, (r) => r.abort());
   await page.goto("/.game/index.html");

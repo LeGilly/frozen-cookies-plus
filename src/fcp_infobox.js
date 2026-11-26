@@ -102,15 +102,7 @@ FCP.gcTimes = function () {
     if (g.spawned) return { state: "onscreen" };
     if (!g.spawnConditions()) return { state: "paused" };
     var fps = Game.fps, t = g.time, min = g.minTime, max = g.maxTime;
-    var survive = 1, likely = null, frame = t;
-    while (frame < max) {
-        frame++;
-        var p = frame > min ? Math.pow((frame - min) / (max - min), 5) : 0;
-        survive *= 1 - Math.min(1, p);
-        if (likely === null && survive <= 0.5) likely = frame;
-        if (survive <= 0) break;
-    }
-    if (likely === null) likely = max;
+    var likely = FCP.medianSpawnFrame(min, max, t);
     return {
         state: "waiting",
         earliest: Math.max(0, min - t) / fps,
@@ -120,7 +112,7 @@ FCP.gcTimes = function () {
 };
 
 FCP.noBankInfo = function () {
-    try {
+    return FCP.attempt("no-bank info", function () {
         var lucky = luckyBank();
         if (!(lucky > 0)) return "";
         var bankScore = cookieEfficiency(Game.cookies, lucky);
@@ -131,9 +123,7 @@ FCP.noBankInfo = function () {
         var name = next.purchase && (next.purchase.dname || next.purchase.name);
         return "none yet · a Lucky! bank (" + Beautify(lucky) + ") pays back in " + fmt(bankScore) +
             " vs " + name + " in " + fmt(next.efficiency);
-    } catch (e) {
-        return "";
-    }
+    }, "");
 };
 
 FCP.infoLines = function (t_d) {
@@ -148,8 +138,7 @@ FCP.infoLines = function (t_d) {
 
     // Times are computed here rather than taken from FC's infobox: FC assumes
     // the autoclicker is running, which is wrong during a Neverclick run.
-    var bankTotal = 0;
-    try { bankTotal = delayAmount() || 0; } catch (e) {}
+    var bankTotal = FCP.bankTarget();
     var rate = FCP.cookieRate();
     var eta = function (need) {
         if (need <= 0) return "affordable now";
@@ -158,8 +147,7 @@ FCP.infoLines = function (t_d) {
         return "in " + (sec < 1 ? "under 1s" : FCP.shortTime(sec));
     };
 
-    var np = null;
-    try { np = nextPurchase(); } catch (e) {}
+    var np = FCP.attempt("next purchase", nextPurchase, null);
     if (np && np.purchase) {
         var cost = np.cost || 0;
         var unlock = FCP.purchaseAchievement(np.purchase, 1);
@@ -174,13 +162,12 @@ FCP.infoLines = function (t_d) {
 
     var chain = byPrefix("Chain to: ");
     if (chain) {
-        var need = 0;
-        try {
+        var need = FCP.attempt("chained purchase cost", function () {
             var cp = nextChainedPurchase().purchase;
             var chainTotal = upgradePrereqCost(cp, true) - cp.getPrice();
             var chainFinished = chainTotal - (upgradePrereqCost(cp) - cp.getPrice());
-            need = chainTotal + bankTotal - Game.cookies - chainFinished;
-        } catch (e) {}
+            return chainTotal + bankTotal - Game.cookies - chainFinished;
+        }, 0);
         line("#9e9e9e", "Then working toward", chain.name.slice(10) + " (buying its requirements first) · " + eta(need));
     }
 
@@ -205,8 +192,7 @@ FCP.infoLines = function (t_d) {
     if (FrozenCookies.smartAscend && FCP.status["Ascension"]) line("#b39ddb", "Next ascension", FCP.status["Ascension"]);
 
     if (FrozenCookies.autoDragon || FrozenCookies.dragonTiming) {
-        var dn = null;
-        try { dn = FCP.dragonNext(); } catch (e) {}
+        var dn = FCP.attempt("dragon next", FCP.dragonNext, null);
         if (dn) line("#ffb74d", "Dragon", dn.name.replace(/^Train /, "") + " · " + dn.cost + (dn.why ? " · " + dn.why : " · now"));
     }
 
@@ -270,12 +256,6 @@ FCP.infoLines = function (t_d) {
 // Drawing: an HTML overlay (crisp text, drawn above the cookie and cursors,
 // ignores the mouse) placed above FC's progress wheel.
 // ---------------------------------------------------------------------------
-FCP.escape = function (t) {
-    return String(t).replace(/[&<>"]/g, function (ch) {
-        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch];
-    });
-};
-
 FCP.panelCss =
     "#fcpInfoPanel{position:absolute;left:10px;z-index:6;pointer-events:none;box-sizing:border-box;" +
     "background:rgba(8,8,12,0.84);border:1px solid rgba(255,255,255,0.18);border-radius:6px;" +
@@ -381,7 +361,7 @@ if (Game.textParticlesAdd && !Game.textParticlesAdd.__fcp) {
         var add = Game.textParticlesAdd;
         Game.textParticlesAdd = function (text) {
             var r = add.apply(this, arguments);
-            try {
+            FCP.attempt("popup position", function () {
                 var me = Game.textParticles.filter(function (p) { return p.life === 0 && p.text === text; }).pop();
                 if (me && me.l) {
                     var minY = Game.bounds.top + (typeof App !== "undefined" && App ? 32 : 0) + me.l.offsetHeight + 32 + 12;
@@ -390,7 +370,7 @@ if (Game.textParticlesAdd && !Game.textParticlesAdd.__fcp) {
                         me.l.style.bottom = Math.floor(-me.y) + "px";
                     }
                 }
-            } catch (e) {}
+            });
             return r;
         };
         Game.textParticlesAdd.__fcp = true;

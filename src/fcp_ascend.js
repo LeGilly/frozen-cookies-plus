@@ -168,18 +168,14 @@ FCP.autoAscend = function (why) {
 };
 
 FCP.patchHeavenlyBuy = function () {
-    if (Game.Reincarnate.__fcpHeavenly) return;
-    var original = Game.Reincarnate;
-    var patched = function (bypass) {
-        if (bypass && FCP.autoAscension && FrozenCookies.smartAscend && Game.OnAscend) {
-            try { FCP.buyHeavenly(); } catch (e) { console.error("[FC+] heavenly upgrades failed:", e); }
-        }
-        if (bypass) FCP.autoAscension = "";
-        return original.apply(this, arguments);
-    };
-    patched.__fcpHeavenly = true;
-    patched.__fcp = original.__fcp; // keep the challenge run wrapper recognised
-    Game.Reincarnate = patched;
+    FCP.wrapOnce(Game, "Reincarnate", "heavenly", function (original) {
+        return function (bypass) {
+            if (bypass && FCP.autoAscension && FrozenCookies.smartAscend && Game.OnAscend)
+                FCP.attempt("heavenly upgrades", FCP.buyHeavenly);
+            if (bypass) FCP.autoAscension = "";
+            return original.apply(this, arguments);
+        };
+    });
 };
 
 // --- One-time goals worth finishing before ascending ---------------------------------
@@ -301,15 +297,14 @@ FCP.ascendHolds = function () {
     if (Game.season === "christmas" || Game.Has("Season switcher")) {
         var away = Game.season === "christmas" ? "" :
             /^(halloween|easter|valentines)$/.test(Game.season) ? " · back after " + Game.seasons[Game.season].name : " · switching back";
-        // 200 reindeer in one run.
-        if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) {
-            var r = Game.shimmerTypes.reindeer, rMin = r ? r.getMinTime(r) : 0, rMax = r ? r.getMaxTime(r) : 0;
-            var avg = rMax > rMin ? (rMin + 0.25 * (rMax - rMin)) / fps : 0;
-            add("reindeer (" + Game.reindeerClicked + "/200" + eta((200 - Game.reindeerClicked) * avg) + away + ")");
+        // 200 reindeer in one run (fcp_season.js has the Christmas numbers).
+        if (FCP.reindeerWanted()) {
+            var left = FCP.REINDEER_GOAL - Game.reindeerClicked;
+            add("reindeer (" + Game.reindeerClicked + "/" + FCP.REINDEER_GOAL + eta(left * FCP.reindeerSeconds()) + away + ")");
         }
         // Santa's final form.
-        if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < 14)
-            add("Santa (" + Game.santaLevel + "/14" + away + ")");
+        if (!FCP.has("All hail Santa") && Game.Has("A festive hat") && Game.santaLevel < FCP.santaMax())
+            add("Santa (" + Game.santaLevel + "/" + FCP.santaMax() + away + ")");
     }
     return holds;
 };
@@ -326,11 +321,10 @@ FCP.holdLeft = function (holds) {
     return limit - elapsed;
 };
 FCP.holdSince = function () {
-    var key = "fcpAscendHold", run = String(Game.startDate), saved = null;
-    try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
-    if (!saved || saved.run !== run) {
-        saved = { run: run, since: Date.now() };
-        try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+    var saved = FCP.runStore("fcpAscendHold");
+    if (!saved.since) {
+        saved.since = Date.now();
+        FCP.store("fcpAscendHold", saved);
     }
     return saved.since;
 };
@@ -338,7 +332,7 @@ FCP.holdSince = function () {
 // --- When to ascend -----------------------------------------------------------
 FCP.runLevels = function () {
     var total = Game.cookiesReset + Game.cookiesEarned;
-    try { total += wrinklerValue() + chocolateValue(); } catch (e) {}
+    total += FCP.attempt("wrinkler and chocolate egg value", function () { return wrinklerValue() + chocolateValue(); }, 0);
     return Math.floor(Game.HowMuchPrestige(total)) - Game.prestige;
 };
 FCP.ascendTarget = function () {

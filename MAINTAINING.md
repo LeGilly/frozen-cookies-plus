@@ -50,13 +50,13 @@ the surprises found so far) and [`TODO.md`](TODO.md) (where work stands and what
 |---|---|
 | `frozen_cookies.js` | Loader: version (`version`), game versions (`steamGameVersion`, `lastCompatibleVersion`), file load order |
 | `src/fc_*.js`, `src/cc_upgrade_prerequisites.js` | Upstream Frozen Cookies (erbkaiser's fork, erb-2.052.8), **unmodified** |
-| `src/fcp_core.js` | Plus: new options in the FC menu, scheduler (wraps `FCStart`), helpers, achievement tracker in the menu |
-| `src/fcp_achievements.js` | Achievement Hunter (wrinkler poking every 700 ms, protected from FC's popping; popping wrinklers as they come out until 200 this run, `FCP.popWrinklers`), Elder Pledge (buys Elder Pact, then 10 pledges a run by cycling Pledge → Covenant → Revoke, then the Covenant left on unless `FCP.wrinklersWanted()`), challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
+| `src/fcp_core.js` | Plus: new options in the FC menu (with their `recommended` values), scheduler (wraps `FCStart`), shared helpers (see Rules for the code), achievement tracker in the menu |
+| `src/fcp_achievements.js` | Achievement Hunter (wrinkler poking every 700 ms, protected from FC's popping; popping wrinklers as they come out until 200 this run, `FCP.popWrinklers`; the gift for No time like the present), Elder Pledge (buys Elder Pact, then 10 pledges a run by cycling Pledge → Covenant → Revoke, then the Covenant left on unless `FCP.wrinklersWanted()`), challenge runs (Born Again: Neverclick, Speed baking, Hardcore; wraps `Game.Ascend`, `Game.Reincarnate`, `fcClickCookie`), tracker categories |
 | `src/fcp_bankrules.js` | Bank rules: wraps `autoGSBuy`, `autoGodzamokAction`, `autoEasterAction`, `autoHalloweenAction`, `buyOtherUpgrades` (with `Game.Upgrade.prototype.buy`) and `isRewardCookie`. Loaded before fcp_bankwatch.js so the bank watcher sees the wrapped versions |
 | `src/fcp_dragon.js` | Smart dragon auras: tries each pair of known auras with `Game.CalculateGains()` (with `Game.Win` stubbed so nothing is won from a pair not worn), switches by setting `Game.dragonAura`/`dragonAura2` and sacrificing one top building, as the game's confirm button does, without opening the prompt. Wraps `Game.UpgradeDragon` to close the dragon menu it opens when it was closed before, and FC's `autoDragonAura0Action`/`autoDragonAura1Action` |
 | `src/fcp_ascend.js` | Smart ascension: when to ascend (440 levels the first time, then when prestige doubles), one-time goal holds (`FCP.ascendHolds`: research to One mind or Elder Pact by missing achievement or this run's pledges, `FCP.researchTarget`, `FCP.RESEARCH_GOALS`; `FCP.researchTick` buys the steps FC scores as no gain, 200 wrinkler pops, pledges, a new garden seed, 200 reindeer, Santa; at most 8 h, +2 h for a goal nearly done, `FCP.holdLeft`), the boot guard (`FCP.gameSettled`: minigames loaded and 15 s after start), `FCP.autoAscend(why)` (every ascension FC+ makes goes through it), the heavenly upgrade buyer (`FCP.heavenlyPriority`, wraps `Game.Reincarnate`), permanent upgrade slots (scored by effect × lateness), and the autoCookie wrapper that sets FC's own auto-ascend aside |
 | `src/fcp_bankwatch.js` | Why the golden cookie bank is below full. Wraps `Game.Spend`, `Game.Upgrade.prototype.buy`, each building's `buy`, `Game.storeBuyAll`, `Game.UpgradeSanta`, `Game.UpgradeDragon`, `autoCookie` and FC's actions that skip the bank (`autoGSBuy`, `buyOtherUpgrades`, season, dragon, bank office, Godzamok, reward cookies) to note what was bought and by whom. `FCP.addTask` files a task's spending under "FC+ (name)" |
-| `src/fcp_shadow.js` | UI tricks, shadow achievements, the gift, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
+| `src/fcp_shadow.js` | UI tricks, shadow achievements, the ascension marathon and the cheats. Check-frame tricks wrap `Game.Logic`: applied only on frames where `Game.T % (5*fps) == 0` and undone after the frame |
 | `src/fcp_lumps.js` | Sugar lumps: minigames first (needs the building owned), then level targets (Farm, Bank, Wizard tower, Temple, then costliest down, Cursor 12 last), then best CpS per lump once every building is owned |
 | `src/fcp_market.js` | Stock trading: buys low, sells only above what was paid with fees (`FCP.stockPaid`), hires brokers when this run's volume pays for them (`FCP.brokerWorth`), stops buying and takes any profit within 2 hours of a smart ascension (`FCP.ascensionSoon`), since the market is wiped at ascension |
 | `src/fcp_garden.js` | Garden breeder (recipes mirror the game's `M.getMuts`), harvest farming, the sacrifice. Rebuilds the plot from scratch every tick, so an emptied plot (ascension) needs nothing special |
@@ -85,13 +85,25 @@ the surprises found so far) and [`TODO.md`](TODO.md) (where work stands and what
 - **Don't edit the upstream files.** Change their behaviour from `fcp_*` files by wrapping globals
   (`FCStart`, `fcClickCookie`, `recommendedSettingsAction`, `drawCircles`, `autoCookie`, `safeBuy`, `purchaseEfficiency`, `baseClickingCps`, building `tooltip`, `Game.crateTooltip`, `Game.Ascend`, `Game.Reincarnate`).
   Wrappers must exist before `registerMod` runs, which the load order in `frozen_cookies.js` guarantees.
-  Updating upstream then stays a plain file copy.
+  Updating upstream then stays a plain file copy. A wrapper installed again from a task (it checks
+  whether it is already there) goes through `FCP.wrapOnce(obj, name, tag, make)`: it carries over the
+  markers of other FC+ wrappers on the same function, so two modules can wrap it in either order.
 - New options go in `FCP.preferenceValues` (fcp_core.js): they show up in the menu, save and load by
-  themselves. Use multiple-choice values, not free numbers. Recommended settings switch them on in
-  `recommendedSettingsAction` (fcp_core.js).
+  themselves. Use multiple-choice values, not free numbers. Give each a `recommended:` value next to its
+  `default:`: **Apply recommended options** sets every option that has one (no separate list to keep up).
 - Periodic work: `FCP.addTask(name, enabledTest, fn, intervalMs)`. Restarted whenever FC restarts; an
   exception is logged once instead of killing the interval.
 - Spend cookies only through `FCP.canSpend(cost)` / `FCP.spare()`, so nothing eats FC's golden cookie bank.
+  Read the bank itself with `FCP.bankTarget()`, never `delayAmount()` directly.
+- A call into FC or the game that may fail (caches not built at boot, a minigame not loaded) goes through
+  `FCP.attempt(name, fn, fallback)`, not an empty `catch`: the first failure of each name is reported in
+  the console, and the tests count those reports as errors.
+- Values kept across reloads: `FCP.store(key, value)` (JSON in localStorage), or `FCP.runStore(key, fresh)`
+  for one that only lasts the current run.
+- Shared helpers to use instead of rewriting them: `FCP.shortTime` (every time shown), `FCP.escape`,
+  `FCP.realClickRate` / `FCP.autoclicking` / `FCP.cookieRate` (fcp_clicks.js), `FCP.medianSpawnFrame`
+  (golden cookie and reindeer timing), the Christmas numbers (`FCP.REINDEER_GOAL`, `FCP.santaMax`,
+  `FCP.reindeerWanted`, `FCP.reindeerSeconds` in fcp_season.js), `FCP.appendGroups` (menu lists).
 - What a module is doing goes in `FCP.status["Name"]`; the infobox and the menu tracker show it.
 - The mod never downloads code: everything is inlined by the build. Keep it that way.
 - Per-run data in `localStorage` is keyed by `Game.startDate` (a new run starts fresh): `fcpAscendHold`,
@@ -152,8 +164,9 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 The tests can't run the Steam app itself; after a release, check once in the game.
 
 Run locally: `rm -rf Steam dist; CI=1 CHROME_PATH=/usr/bin/google-chrome npm test -- --workers=2` (about 4 minutes,
-87 tests at 1.12.9). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
-(`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay. Tests that
+87 tests at 1.12.10). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
+(`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay, and counts
+FC+ console warnings and errors (`[FC+] ...`) with the page errors, so `noErrors` fails on them too. Tests that
 wait on FC's intervals can be slow when the whole suite runs at once: give them generous poll timeouts.
 For a one-off check of the game's data, a throwaway `tests/zz_*.spec.mjs` that logs with `console.log` works well
 (delete it afterwards).

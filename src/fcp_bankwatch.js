@@ -160,8 +160,7 @@ FCP.bankTick = function () {
         w.why = "";
         return;
     }
-    var target = 0;
-    try { target = delayAmount() || 0; } catch (e) {}
+    var target = FCP.bankTarget();
     var cookies = Game.cookies;
     if (!(target > 0) || cookies >= target * 0.9999) {
         w.full = target > 0;

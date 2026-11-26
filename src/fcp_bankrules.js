@@ -122,9 +122,7 @@ FCP.bankRuleWrap("autoHalloweenAction", function () {
 FCP.bankRuleWrap("autoEasterAction", function () {
     var u = Game.UpgradesById[209]; // Bunny biscuit
     if (!u) return true;
-    var bank = 0;
-    try { bank = delayAmount() || 0; } catch (e) {}
-    return FCP.canSpend(u.getPrice()) || u.getPrice() <= bank * 0.1;
+    return FCP.canSpend(u.getPrice()) || u.getPrice() <= FCP.bankTarget() * 0.1;
 });
 
 // Extra upgrades: each purchase made inside buyOtherUpgrades waits for the bank.

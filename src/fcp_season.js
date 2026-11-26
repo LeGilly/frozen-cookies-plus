@@ -26,11 +26,30 @@ FCP.seasonName = function (s) {
     return s === "" ? "no season" : Game.seasons[s] ? Game.seasons[s].name : s;
 };
 
-// What this run still needs Christmas for, as short labels ([] when nothing).
+// The Christmas numbers, shared with smart ascension's holds (fcp_ascend.js).
+FCP.REINDEER_GOAL = 200; // Reindeer sleigher: 200 reindeer in one run
+FCP.santaMax = function () {
+    return Game.santaLevels.length - 1; // 14: Santa's final form
+};
+FCP.reindeerWanted = function () {
+    return !FCP.has("Reindeer sleigher") && Game.reindeerClicked < FCP.REINDEER_GOAL;
+};
+// Median seconds between two reindeer, from the game's own spawn times (Reindeer baking
+// grounds, Starsnow and the rest included); 0 when unknown.
+FCP.reindeerSeconds = function () {
+    var r = Game.shimmerTypes.reindeer;
+    if (!r) return 0;
+    var min = r.getMinTime(r), max = r.getMaxTime(r);
+    return max > min ? FCP.medianSpawnFrame(min, max, 0) / Game.fps : 0;
+};
+
+// What this run still needs Christmas for, as short labels ([] when nothing). Santa counts every
+// run (his levels give upgrades), not only until All hail Santa: the ascension hold only waits
+// for the achievement.
 FCP.christmasGoals = function () {
     var goals = [];
-    if (!FCP.has("Reindeer sleigher") && Game.reindeerClicked < 200) goals.push("reindeer " + Game.reindeerClicked + "/200");
-    var maxSanta = Game.santaLevels.length - 1;
+    if (FCP.reindeerWanted()) goals.push("reindeer " + Game.reindeerClicked + "/" + FCP.REINDEER_GOAL);
+    var maxSanta = FCP.santaMax();
     if (!Game.Has("A festive hat")) goals.push("Santa");
     else if (Game.santaLevel < maxSanta) goals.push("Santa " + Game.santaLevel + "/" + maxSanta);
     if (typeof haveAll === "function" && !haveAll("christmas")) goals.push("reindeer drops");
@@ -44,15 +63,14 @@ FCP.reindeerIncome = function () {
     var per = baseCps() * (Game.Has("Ho ho ho-flavored frosting") ? 2 : 1) * 60;
     var value = Math.max(25, per * 7) * frenzy + Math.max(25, per * 0.5) * clot + Math.max(25, per * 666) * blood +
         Math.max(25, per) * (1 - frenzy - clot - blood);
-    // FC's spawn model has Reindeer baking grounds; Starsnow (reindeer 5% sooner) is added here.
-    var time = (probabilitySpan("reindeer", 0, 0.5) / Game.fps) * (Game.Has("Starsnow") ? 0.95 : 1);
+    var time = FCP.reindeerSeconds();
     return time > 0 ? (value / time) * FrozenCookies.simulatedGCPercent : 0;
 };
 
 // Golden cookie income per second without any season bonus (FC's spawn model leaves the Star
 // upgrades out, so this is the same in every season).
 FCP.goldenIncomeBase = function () {
-    return gcPs(cookieValue(Math.min(Game.cookies, delayAmount())));
+    return gcPs(cookieValue(Math.min(Game.cookies, FCP.bankTarget())));
 };
 
 // Each season's extra income per second, best first: [{season, value, what}].
@@ -83,8 +101,8 @@ FCP.seasonTick = function () {
         FCP.status["Season"] = "";
         return;
     }
-    var b;
-    try { b = FCP.bestSeason(); } catch (e) { return; }
+    var b = FCP.attempt("best season", FCP.bestSeason, null);
+    if (!b) return;
     var i = seasons.indexOf(b.season);
     if (i > 0 && FrozenCookies.defaultSeason !== i) {
         FrozenCookies.defaultSeason = i;

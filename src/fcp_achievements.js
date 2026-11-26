@@ -1,5 +1,6 @@
-// Frozen Cookies Plus — achievement hunter, Neverclick runs and the
-// achievement tracker shown in the FC menu.
+// Frozen Cookies Plus — achievement hunter (interaction achievements, wrinkler poking and pops,
+// the gift for No time like the present), the Elder Pledges, challenge runs (Neverclick, Speed
+// baking, Hardcore) and the achievement tracker shown in the FC menu.
 
 // ---------------------------------------------------------------------------
 // One-off interaction achievements
@@ -93,14 +94,13 @@ FCP.pokeWrinkler = function () {
 };
 
 FCP.patchWrinklerPop = function () {
-    if (typeof shouldPopWrinklers !== "function" || shouldPopWrinklers.__fcp) return;
-    var original = shouldPopWrinklers;
-    shouldPopWrinklers = function () {
-        var list = original.apply(this, arguments);
-        var keep = FrozenCookies.achievementHunter ? FCP.pokeTarget() : null;
-        return keep ? list.filter(function (id) { return id !== keep.id; }) : list;
-    };
-    shouldPopWrinklers.__fcp = true;
+    FCP.wrapOnce(window, "shouldPopWrinklers", "poke", function (original) {
+        return function () {
+            var list = original.apply(this, arguments);
+            var keep = FrozenCookies.achievementHunter ? FCP.pokeTarget() : null;
+            return keep ? list.filter(function (id) { return id !== keep.id; }) : list;
+        };
+    });
 };
 
 // Wrinklesquisher and Moistburster: 50 and 200 wrinklers popped, counted per run (the game resets
@@ -155,39 +155,83 @@ FCP.popWrinklers = function () {
 
 // Debt evasion: take a loan right before FC auto-ascends.
 FCP.patchAscend = function () {
-    if (Game.Ascend.__fcp) return;
-    var original = Game.Ascend;
-    var patched = function (bypass) {
-        try {
-            var B = Game.Objects["Bank"].minigame;
-            if (
-                bypass &&
-                FrozenCookies.achievementHunter &&
-                !FCP.has("Debt evasion") &&
-                B &&
-                B.officeLevel >= 2 &&
-                !Game.hasBuff("Loan 1") &&
-                !Game.hasBuff("Loan 1 (interest)")
-            ) {
-                B.takeLoan(1);
-                FCP.log("Took a loan before ascending for 'Debt evasion'.");
-            }
-        } catch (e) {}
-        try {
-            if (
-                bypass &&
-                FrozenCookies.shadowAchievements &&
-                !FCP.marathonAscending &&
-                !FCP.has("When the cookies ascend just right") &&
-                Game.cookies >= 1e12
-            ) {
-                if (FCP.landBank(1e12)) FCP.log("Bank set to exactly 1 trillion before ascending: 'When the cookies ascend just right'.");
-            }
-        } catch (e) {}
-        return original.apply(this, arguments);
-    };
-    patched.__fcp = true;
-    Game.Ascend = patched;
+    FCP.wrapOnce(Game, "Ascend", "achievements", function (original) {
+        return function (bypass) {
+            FCP.attempt("Debt evasion", function () {
+                var B = Game.Objects["Bank"].minigame;
+                if (bypass && FrozenCookies.achievementHunter && !FCP.has("Debt evasion") && B && B.officeLevel >= 2 &&
+                    !Game.hasBuff("Loan 1") && !Game.hasBuff("Loan 1 (interest)")) {
+                    B.takeLoan(1);
+                    FCP.log("Took a loan before ascending for 'Debt evasion'.");
+                }
+            });
+            FCP.attempt("When the cookies ascend just right", function () {
+                if (bypass && FrozenCookies.shadowAchievements && !FCP.marathonAscending &&
+                    !FCP.has("When the cookies ascend just right") && Game.cookies >= 1e12 && FCP.landBank(1e12))
+                    FCP.log("Bank set to exactly 1 trillion before ascending: 'When the cookies ascend just right'.");
+            });
+            return original.apply(this, arguments);
+        };
+    });
+};
+
+// ---------------------------------------------------------------------------
+// No time like the present (Achievement Hunter): needs the Wrapping paper heavenly upgrade,
+// 1 billion cookies and a normal run. Send a 1-cookie gift through the game's own gift screen,
+// keep the code, and redeem it once the 1-hour "Gifted out" cooldown is over.
+// ---------------------------------------------------------------------------
+FCP.giftState = function (value) {
+    return FCP.store("fcpGift", value);
+};
+
+FCP.giftTick = function () {
+    if (FCP.giftStep === "close") {
+        if (Game.promptOn) Game.ClosePrompt();
+        FCP.giftStep = null;
+        if (FCP.has("No time like the present")) FCP.log("Redeemed our own gift: 'No time like the present'.");
+        return;
+    }
+    if (FCP.has("No time like the present")) {
+        if (FCP.giftState()) FCP.giftState(null);
+        return;
+    }
+    if (!Game.Has("Wrapping paper") || Game.ascensionMode != 0 || Game.cookies < 1e9) return;
+    var el = function (id) { return document.getElementById(id); };
+    var state = FCP.giftState() || {};
+    var click = function (id) { if (el(id)) el(id).click(); };
+
+    // Steps that continue a prompt we opened.
+    if (Game.promptOn && FCP.giftStep === "send" && el("giftAmount")) {
+        el("giftAmount").value = "1";
+        el("giftAmount").dispatchEvent(new Event("change"));
+        click("promptOption0"); // Wrap: shows the code
+        FCP.giftStep = "copy";
+        return;
+    }
+    if (Game.promptOn && FCP.giftStep === "copy" && el("giftCode") && el("giftCode").value) {
+        FCP.giftState({ code: el("giftCode").value, at: Date.now() });
+        Game.ClosePrompt();
+        FCP.giftStep = null;
+        FCP.log("Sent a 1-cookie gift to redeem in an hour, for 'No time like the present'.");
+        return;
+    }
+    if (Game.promptOn && FCP.giftStep === "redeem" && el("giftCode") && !el("giftCode").readOnly) {
+        el("giftCode").value = state.code;
+        el("giftCode").dispatchEvent(new Event("change"));
+        click("promptOption0");
+        FCP.giftStep = "close";
+        return;
+    }
+    if (Game.promptOn || Game.hasBuff("Gifted out")) return;
+
+    // Codes expire after about 2 days: make a new one if needed, else redeem it.
+    if (!state.code || Date.now() - state.at > 40 * 3600 * 1000) {
+        FCP.giftStep = "send";
+        Game.promptGiftSend();
+    } else {
+        FCP.giftStep = "redeem";
+        Game.promptGiftRedeem();
+    }
 };
 
 // ---------------------------------------------------------------------------
@@ -340,11 +384,8 @@ FCP.speedClick = function () {
 // Remember (across reloads) that FC+ started the current Born Again run, so it only ever ends
 // its own challenge runs, never one you started yourself.
 FCP.challengeFlag = function (value) {
-    try {
-        if (value === undefined) return localStorage.getItem("fcpChallengeRun") === "1";
-        if (value) localStorage.setItem("fcpChallengeRun", "1");
-        else localStorage.removeItem("fcpChallengeRun");
-    } catch (e) {}
+    if (value === undefined) return FCP.store("fcpChallengeRun") === 1;
+    FCP.store("fcpChallengeRun", value ? 1 : null);
     return !!value;
 };
 
@@ -373,24 +414,21 @@ FCP.watchNoClick = function () {
 };
 
 FCP.patchReincarnate = function () {
-    if (Game.Reincarnate.__fcp) return;
-    var original = Game.Reincarnate;
-    var patched = function (bypass) {
-        var goals = FCP.challengeGoals();
-        if (bypass && FrozenCookies.challengeRuns && !FCP.challengeExit && !FCP.marathonReincarnating && goals.length) {
-            Game.nextAscensionMode = 1;
-            FCP.challengeFlag(true);
-            FCP.log("Reincarnating in Born Again mode for: " + goals.map(FCP.goalLabel).join(", ") + ".", true);
-        } else if (bypass && Game.nextAscensionMode != 1) {
-            FCP.challengeFlag(false);
-        }
-        FCP.challengeExit = false;
-        FCP.reached1M = 0;
-        return original.apply(this, arguments);
-    };
-    patched.__fcp = true;
-    patched.__fcpHeavenly = original.__fcpHeavenly; // keep the heavenly upgrade wrapper recognised
-    Game.Reincarnate = patched;
+    FCP.wrapOnce(Game, "Reincarnate", "challenge", function (original) {
+        return function (bypass) {
+            var goals = FCP.challengeGoals();
+            if (bypass && FrozenCookies.challengeRuns && !FCP.challengeExit && !FCP.marathonReincarnating && goals.length) {
+                Game.nextAscensionMode = 1;
+                FCP.challengeFlag(true);
+                FCP.log("Reincarnating in Born Again mode for: " + goals.map(FCP.goalLabel).join(", ") + ".", true);
+            } else if (bypass && Game.nextAscensionMode != 1) {
+                FCP.challengeFlag(false);
+            }
+            FCP.challengeExit = false;
+            FCP.reached1M = 0;
+            return original.apply(this, arguments);
+        };
+    });
 };
 
 FCP.challengeTick = function () {
@@ -548,6 +586,7 @@ FCP.achievementReport = function () {
 };
 
 FCP.addTask("hunter", function () { return !!FrozenCookies.achievementHunter; }, FCP.hunterTick, 2000);
+FCP.addTask("gift", function () { return !!FrozenCookies.achievementHunter; }, FCP.giftTick, 2000);
 FCP.addTask("poke", function () { return !!FrozenCookies.achievementHunter && !FCP.has("Wrinkler poker"); }, FCP.pokeWrinkler, 700);
 FCP.addTask("pops", function () { return !!FrozenCookies.achievementHunter && FCP.popTarget() > 0; }, FCP.popWrinklers, 2000);
 FCP.addTask("challenge", function () { return !!FrozenCookies.challengeRuns; }, FCP.challengeTick, 2000);

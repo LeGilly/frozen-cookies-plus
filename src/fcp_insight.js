@@ -20,12 +20,8 @@ FCP.insightNone = ["#9e9e9e", "no income gain"];
 FCP.insight = { byKey: {}, best: Infinity, count: 0, income: 0 };
 
 FCP.refreshInsight = function () {
-    var list = [];
-    try {
-        list = recommendationList() || [];
-    } catch (e) {
-        return;
-    }
+    var list = FCP.attempt("recommendation list", recommendationList, null);
+    if (!list) return;
     // Rank and colour among what can be bought right now (buildings, store upgrades); FC's list also
     // holds locked upgrades bundled with their requirements.
     var buyable = function (r) {
@@ -34,12 +30,7 @@ FCP.refreshInsight = function () {
     var finite = list.filter(function (r) { return r && !r.bundle && buyable(r) && isFinite(r.efficiency) && r.efficiency > 0; });
     var best = finite.reduce(function (m, r) { return Math.min(m, r.efficiency); }, Infinity);
     var sorted = finite.slice().sort(function (a, b) { return a.efficiency - b.efficiency; });
-    var income = 0;
-    try {
-        income = effectiveCps();
-    } catch (e) {
-        income = Game.cookiesPs;
-    }
+    var income = FCP.attempt("effective CpS", effectiveCps, Game.cookiesPs);
     var byKey = {};
     list.forEach(function (r) {
         if (!r || !r.purchase || r.bundle) return;
@@ -129,9 +120,10 @@ FCP.patchTooltips = function () {
         var original = o.tooltip;
         var patched = function () {
             var html = original.apply(this, arguments);
-            try {
-                if (typeof html === "string" && html) html = html.replace(/<\/div>\s*$/, FCP.insightTooltip("building:" + o.id, o) + "</div>");
-            } catch (e) {}
+            if (typeof html === "string" && html)
+                html = FCP.attempt("building tooltip", function () {
+                    return html.replace(/<\/div>\s*$/, FCP.insightTooltip("building:" + o.id, o) + "</div>");
+                }, html);
             return html;
         };
         patched.__fcp = true;
@@ -141,10 +133,10 @@ FCP.patchTooltips = function () {
         var crate = Game.crateTooltip;
         var patchedCrate = function (me, context) {
             var html = crate.apply(this, arguments);
-            try {
-                if (context === "store" && me && me.type === "upgrade" && !me.bought && typeof html === "string")
-                    html = html.replace(/<\/div>\s*$/, FCP.insightTooltip("upgrade:" + me.id) + "</div>");
-            } catch (e) {}
+            if (context === "store" && me && me.type === "upgrade" && !me.bought && typeof html === "string")
+                html = FCP.attempt("upgrade tooltip", function () {
+                    return html.replace(/<\/div>\s*$/, FCP.insightTooltip("upgrade:" + me.id) + "</div>");
+                }, html);
             return html;
         };
         patchedCrate.__fcp = true;
@@ -256,15 +248,15 @@ FCP.incomeBreakdown = function () {
         golden = 0,
         reindeer = 0,
         wrinklers = 0;
-    try {
-        var bank = Math.min(Game.cookies, delayAmount());
+    FCP.attempt("income breakdown", function () {
+        var bank = Math.min(Game.cookies, FCP.bankTarget());
         golden = gcPs(cookieValue(bank));
         reindeer = reindeerCps(Game.elderWrath);
         var w = wrinklerMod(liveWrinklers().length);
         wrinklers = Math.max(0, baseCps() * (w - 1));
         buildings = baseCps();
-    } catch (e) {}
-    if (FCP.cookieRate) clicking = Math.max(0, FCP.cookieRate() - Game.cookiesPs);
+    });
+    clicking = Math.max(0, FCP.cookieRate() - Game.cookiesPs);
     out.push(["Buildings", buildings], ["Golden cookies (average)", golden], ["Clicking", clicking],
         ["Wrinklers (when popped)", wrinklers], ["Reindeer (average)", reindeer]);
     return out.filter(function (x) { return x[1] > 0; });

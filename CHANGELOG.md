@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.12.10 · 2026-11-26
+### Changed
+- The reindeer estimates (the ascension hold's time to 200, and Smart season's reindeer income) both come from the game's own reindeer timer now, like the golden cookie estimate in the infobox. They used two different formulas, and Smart season's left out some reindeer speed-ups
+- Code tidy-up, no change to what FC+ does: shared helpers for the golden cookie bank, values kept across reloads, wrapping game functions and the menu lists; "Apply recommended options" reads each option's recommended value from its definition; the gift for No time like the present moved to the Achievement Hunter module
+
+### Fixed
+- Errors FC+ recovers from were silently ignored in about 40 places: they are now reported once each in the browser console ("[FC+] ... failed"), and the tests fail on them
+
 ## 1.12.9 · 2026-11-26
 ### Changed
 - The elder achievements only count when an option works on them: Wrinkler poker and the wrinkler pops with the Achievement Hunter, Elder nap, slumber and calm with the Elder Pledge option. Without them, FC+ no longer buys Communal brainsweep and Elder Pact (which turn golden cookies into wrath cookies for the rest of the run), and smart ascension no longer waits for that research

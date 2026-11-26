@@ -183,5 +183,10 @@ test("the Recommended button applies FC and FC+ recommended options, then the ga
   expect(await page.evaluate(() => [FrozenCookies.burstBuy, FrozenCookies.smartAscend, FrozenCookies.autoBuy, FrozenCookies.recommendedSettings, window._reload]))
     .toEqual([1, 1, 1, 0, true]);
   expect(await page.evaluate(() => [FrozenCookies.defaultSeasonToggle, seasons[FrozenCookies.defaultSeason]])).toEqual([1, "christmas"]);
+  // Every Plus option with a recommended value gets it; the marathon and the cheats are left alone.
+  expect(await page.evaluate(() => Object.keys(FCP.preferenceValues)
+    .filter((k) => FCP.preferenceValues[k].recommended !== undefined && FrozenCookies[k] !== FCP.preferenceValues[k].recommended))).toEqual([]);
+  expect(await page.evaluate(() => [FrozenCookies.smartSeason, FrozenCookies.autoLumps, FrozenCookies.ascensionMarathon, FrozenCookies.cheatAchievement]))
+    .toEqual([1, 2, 0, 0]);
   noErrors(errors);
 });
