@@ -190,5 +190,7 @@ test("the Recommended button applies FC and FC+ recommended options, then the ga
     .filter((k) => FCP.preferenceValues[k].recommended !== undefined && FrozenCookies[k] !== FCP.preferenceValues[k].recommended))).toEqual([]);
   expect(await page.evaluate(() => [FrozenCookies.smartSeason, FrozenCookies.autoLumps, FrozenCookies.ascensionMarathon, FrozenCookies.cheatAchievement]))
     .toEqual([1, 2, 0, 0]);
+  // FC's own recommendation turns its keyboard shortcuts on; FC+ turns them off (R resets the run).
+  expect(await page.evaluate(() => FrozenCookies.FCshortcuts)).toBe(0);
   noErrors(errors);
 });

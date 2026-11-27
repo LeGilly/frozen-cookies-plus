@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.3 · 2026-11-27
+### Changed
+- Apply recommended options now turns FC's keyboard shortcuts off. They react to a single key anywhere on the game screen, and R resets the run at once without asking, so one stray key could cost a whole run. They can still be turned back on in the FC menu (Shortcuts)
+
 ## 1.13.2 · 2026-11-26
 ### Added
 - Achievement Hunter: *Fading luck* (click a golden cookie less than 1 second before it disappears). FC clicks every golden cookie the moment it appears, so it only happened by chance, when the game was out of focus. FC+ now keeps one naturally spawned golden cookie from FC, one that appears while no buff is running so no combo waits for it, and clicks it in its last second. Its reward is the same, only a few seconds later, and it happens once

@@ -391,6 +391,9 @@ recommendedSettingsAction = function () {
         // Building levels are worth more than the Sugar Baking bonus once
         // you are chasing level 10 achievements.
         FrozenCookies.sugarBakingGuard = 0;
+        // FC's keyboard shortcuts act on a single key anywhere on the game screen, and R resets
+        // the run at once, without asking: one stray key costs a whole run. Off.
+        FrozenCookies.FCshortcuts = 0;
         // recommendedSettingsAction sets recommendedSettings to 0 before the
         // menu can save, so save explicitly.
         Game.toSave = true;

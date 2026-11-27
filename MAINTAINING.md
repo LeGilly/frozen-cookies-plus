@@ -164,7 +164,7 @@ then loads the built bundle into it with Electron-like `module`/`exports` global
 The tests can't run the Steam app itself; after a release, check once in the game.
 
 Run locally: `rm -rf Steam dist; CI=1 CHROME_PATH=/usr/bin/google-chrome npm test -- --workers=2` (about 4 minutes,
-94 tests at 1.13.2). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
+94 tests at 1.13.3). One file: `npx playwright test tests/ascend.spec.mjs`. `tests/game.mjs` has the helpers
 (`loadGame`, `richGame`, `setOptions`, `won`, `noErrors`); `loadGame` skips the boot settling delay, and counts
 FC+ console warnings and errors (`[FC+] ...`) with the page errors, so `noErrors` fails on them too. Tests that
 wait on FC's intervals can be slow when the whole suite runs at once: give them generous poll timeouts.
