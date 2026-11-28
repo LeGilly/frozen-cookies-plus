@@ -10,6 +10,10 @@
 //    more for the same gain, so unit k scores 1.15^k times the first one.
 // Godzamok's sell-and-rebuy is left alone (it doesn't go through autoCookie).
 // The option itself (smartBulk) is declared in fcp_core.js.
+// FC asks for as many units as the store's bulk button shows (x1, x10, x100), and drops the button
+// to x10 or x1 itself near its building limits. With smart bulk on, FC+ decides the count whatever
+// the button shows (up to 100) and keeps to those limits itself (FCP.fcLimit), so the store can
+// stay on x1 and show prices per unit.
 
 // Burst buying (option burstBuy): a burst is when the cookies above the bank cover the next
 // purchase many times over. FC buys one thing per round and recalculates every option after each,
@@ -21,6 +25,14 @@
 FCP.BURST_FACTOR = 10;
 FCP.BURST_TOLERANCE = 2;
 FCP.BURST_EXTRA = 10;
+// Cheap purchases: while burst buying is on, building units and upgrades whose cost stays under
+// this share of the spare cookies are bought without comparing their value with other purchases.
+// Their order hardly matters when everything is that affordable (early in a run, after a big
+// windfall), and comparing only meant one or two units per round. Our own value, not a community one.
+FCP.BURST_CHEAP = 0.01;
+FCP.cheapLimit = function () {
+    return FrozenCookies.burstBuy ? Math.max(0, FCP.spare()) * FCP.BURST_CHEAP : 0;
+};
 FCP.burstSkip = ["Chocolate egg", "One mind", "Communal brainsweep", "Elder Pact", "Elder Pledge", "Elder Covenant",
     "Revoke Elder Covenant", "Sugar frenzy", "Golden switch [off]", "Golden switch [on]"];
 
@@ -49,50 +61,90 @@ FCP.smartBulkCount = function (bldg, count) {
     }
 
     var tolerance = FCP.burstActive() ? FCP.BURST_TOLERANCE : 1;
+    var cheap = FCP.cheapLimit();
     var price = bldg.getPrice();
     var n = 1,
         spent = price;
     while (n < count) {
         var next = price * Math.pow(1.15, n);
         if (spent + next > spare) break;
-        if (mine && isFinite(alternative) && mine.efficiency * Math.pow(1.15, n) > alternative * tolerance) break;
+        if (spent + next > cheap && mine && isFinite(alternative) && mine.efficiency * Math.pow(1.15, n) > alternative * tolerance) break;
         spent += next;
         n++;
     }
     return n;
 };
 
+// How many more of `bldg` FC's own limits allow (the ones its buildingStats uses to leave a building
+// out): Mines and Factories up to their max (700 while the achievement caps are lifted), Wizard
+// towers while max magic is below the max-magic setting, "You" up to the orb limit and to 399 while
+// autocasting Spontaneous Edifice. Infinity when none applies.
+FCP.fcLimit = function (bldg) {
+    var left = Infinity, o = Game.Objects;
+    if (bldg === o.Mine && FrozenCookies.mineLimit) left = FrozenCookies.mineMax - bldg.amount;
+    if (bldg === o.Factory && FrozenCookies.factoryLimit) left = FrozenCookies.factoryMax - bldg.amount;
+    var M = o["Wizard tower"].minigame;
+    if (bldg === o["Wizard tower"] && M && FrozenCookies.towerLimit) {
+        // The Grimoire's max magic formula (minigameGrimoire.js computeMagicM).
+        var lvl = Math.max(bldg.level, 1), n = 0;
+        var magicM = function (t) {
+            t = Math.max(t, 1);
+            return Math.floor(4 + Math.pow(t, 0.6) + Math.log((t + (lvl - 1) * 10) / 15 + 1) * 15);
+        };
+        while (n < 100 && magicM(bldg.amount + n) < FrozenCookies.manaMax) n++;
+        left = n;
+    }
+    if (bldg === o.You) {
+        if (M && FrozenCookies.autoCasting == 5) left = Math.min(left, 399 - bldg.amount);
+        if (FrozenCookies.autoDragonOrbs && FrozenCookies.orbLimit) left = Math.min(left, FrozenCookies.orbMax - bldg.amount);
+    }
+    return left;
+};
+
+// The count FC+ buys of `bldg`: smart bulk within FC's limits (at least the one FC chose).
+FCP.buyCount = function (bldg, ask) {
+    return Math.max(1, Math.min(FCP.smartBulkCount(bldg, ask), FCP.fcLimit(bldg)));
+};
+
 FCP.inAutoCookie = false;
 
-// More purchases from the ranking FC just used, before it recalculates.
+// More purchases from the ranking FC just used, before it recalculates. Cheap ones (FCP.cheapLimit)
+// don't count towards FCP.BURST_EXTRA.
 FCP.burstExtra = function () {
     if (!FCP.burstActive()) return 0;
     var list = FCP.attempt("recommendation list", recommendationList, null);
     if (!list) return 0;
-    var bought = 0;
+    var bought = 0, done = 0;
     for (var i = 0; i < list.length && bought < FCP.BURST_EXTRA; i++) {
         var r = list[i];
         if (!r || !r.purchase || !isFinite(r.efficiency)) continue;
-        var spare = FCP.spare();
+        var spare = FCP.spare(), cheap = FCP.cheapLimit(), price;
         if (r.type === "building") {
             var b = r.purchase;
-            if (b.getPrice() > spare) continue;
-            var n = FCP.smartBulkCount(b, 100);
+            price = b.getPrice();
+            if (price > spare || FCP.fcLimit(b) < 1) continue;
             var before = b.amount;
-            _fcpOriginalSafeBuy.call(window, b, n);
-            if (b.amount > before) bought++;
+            _fcpOriginalSafeBuy.call(window, b, FCP.buyCount(b, 100));
+            if (b.amount > before) {
+                done++;
+                if (price > cheap) bought++;
+            }
         } else if (r.type === "upgrade") {
             var u = r.purchase;
             if (u.bought || !u.unlocked || u.pool === "toggle" || FCP.burstSkip.indexOf(u.name) !== -1) continue;
-            if (u.getPrice() > spare) continue;
-            if (u.buy(1)) bought++;
+            price = u.getPrice();
+            if (price > spare) continue;
+            if (u.buy(1)) {
+                done++;
+                if (price > cheap) bought++;
+            }
         }
     }
-    if (bought) {
+    if (done) {
         FrozenCookies.recalculateCaches = true;
-        FCP.burstCount = (FCP.burstCount || 0) + bought;
+        FCP.burstCount = (FCP.burstCount || 0) + done;
     }
-    return bought;
+    return done;
 };
 
 var _fcpOriginalAutoCookie = autoCookie;
@@ -109,8 +161,9 @@ autoCookie = function () {
 
 var _fcpOriginalSafeBuy = safeBuy;
 safeBuy = function (bldg, count) {
-    if (!(FCP.inAutoCookie && FrozenCookies.smartBulk && count > 1)) return _fcpOriginalSafeBuy.call(this, bldg, count);
-    var n = FCP.smartBulkCount(bldg, count);
+    if (!(FCP.inAutoCookie && FrozenCookies.smartBulk && count > 0)) return _fcpOriginalSafeBuy.call(this, bldg, count);
+    // FC's purchase of its top recommendation: up to 100, whatever the store's button shows.
+    var n = FCP.buyCount(bldg, 100);
     var bank = FCP.bankTarget();
     var r = _fcpOriginalSafeBuy.call(this, bldg, n);
     // Kept for the tests and for checking in the console.

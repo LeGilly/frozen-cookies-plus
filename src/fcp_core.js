@@ -106,7 +106,7 @@ FCP.preferenceValues = {
         recommended: 1,
     },
     smartBulk: {
-        hint: "Smart bulk buy: with the store on x10/x100, buy only as many buildings as fit above the golden cookie bank and are still the best value (see fcp_bulk.js).",
+        hint: "Smart bulk buy: FC+ decides how many of a building FC buys (up to 100, whatever the store's x1/x10/x100 button shows): as many as fit above the golden cookie bank, are still the best value and stay within FC's building limits (see fcp_bulk.js).",
         display: ["Smart bulk buy OFF", "Smart bulk buy ON"],
         default: 0,
         recommended: 1,
@@ -124,7 +124,7 @@ FCP.preferenceValues = {
         recommended: 1,
     },
     burstBuy: {
-        hint: "Burst buying: when far more cookies than the next purchase come in at once (a big golden cookie, a combo), buy several things per round and buildings by the dozen, with one recalculation, instead of one at a time. Slightly less exact, much faster (see fcp_bulk.js).",
+        hint: "Burst buying: when far more cookies than the next purchase come in at once (a big golden cookie, a combo), buy several things per round and buildings by the dozen, with one recalculation, instead of one at a time. Anything costing under 1% of the spare cookies is bought straight away (early in a run: 100 of each building at once). Slightly less exact, much faster (see fcp_bulk.js).",
         display: ["Burst buying OFF", "Burst buying ON"],
         default: 0,
         recommended: 1,
@@ -394,6 +394,10 @@ recommendedSettingsAction = function () {
         // FC's keyboard shortcuts act on a single key anywhere on the game screen, and R resets
         // the run at once, without asking: one stray key costs a whole run. Off.
         FrozenCookies.FCshortcuts = 0;
+        // FC's Auto Bulkbuy clicks the store's x100 button after every ascension. With smart bulk,
+        // FC+ decides how many to buy whatever the button shows (fcp_bulk.js), so the button only
+        // changes the prices the store displays: leave it where you put it (x1: prices per unit).
+        FrozenCookies.autoBulk = 0;
         // recommendedSettingsAction sets recommendedSettings to 0 before the
         // menu can save, so save explicitly.
         Game.toSave = true;

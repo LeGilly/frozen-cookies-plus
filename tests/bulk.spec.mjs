@@ -109,3 +109,62 @@ test("FC's reward-cookie limit restore never sells Wizard towers down to the 37 
   expect(r.tl).toBe(1);
   noErrors(errors);
 });
+
+test("burst buying: units that cost under 1% of the spare cookies are bought without comparing value", async ({ page }) => {
+  const errors = await loadGame(page);
+  // 1% of a billion units' worth covers all 100 (about 7.8 million), even against a better alternative.
+  await setOptions(page, { burstBuy: 1 });
+  expect(await count(page, { spare: 1e9, mineEff: 1, altEff: 1.6 })).toBe(100);
+  // Without burst buying, the value comparison still decides.
+  await setOptions(page, { burstBuy: 0 });
+  expect(await count(page, { spare: 1e9, mineEff: 1, altEff: 1.6 })).toBe(4);
+  noErrors(errors);
+});
+
+test("with the store on x1, FC's autobuy still buys 100 at a time early in a run", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 0, buildings: 0, lumps: 0 });
+  await page.evaluate(() => document.getElementById("storeBulk1").click());
+  await setOptions(page, { autoBuy: 1, smartBulk: 1, burstBuy: 1, blacklist: 2 });
+  await page.evaluate(() => {
+    // The most units any one of FC's purchases got (the store asks for 1 each time).
+    FCP.mostBulk = 0;
+    const inner = window.safeBuy;
+    window.safeBuy = function (b, n) {
+      const r = inner.apply(this, arguments);
+      if (FCP.lastSmartBulk && FCP.lastSmartBulk.asked === 1) FCP.mostBulk = Math.max(FCP.mostBulk, FCP.lastSmartBulk.bought);
+      return r;
+    };
+    Game.cookies = 1e15;
+  });
+  await expect.poll(() => page.evaluate(() => FCP.mostBulk), { timeout: 20_000 }).toBe(100);
+  expect(await page.evaluate(() => Game.buyBulk)).toBe(1); // the store's button is left alone
+  noErrors(errors);
+});
+
+test("FC's building limits still hold when FC+ decides the count", async ({ page }) => {
+  const errors = await loadGame(page);
+  await richGame(page, { cookies: 1e60 });
+  await page.evaluate(() => Game.Objects["Wizard tower"].levelUp(true)); // a free level: the Grimoire loads
+  await page.waitForFunction(() => Game.Objects["Wizard tower"].minigameLoaded, null, { timeout: 30_000 });
+  const r = await page.evaluate(() => {
+    Object.assign(FrozenCookies, { smartBulk: 1, burstBuy: 1, mineLimit: 1, mineMax: 500, factoryLimit: 1, factoryMax: 500,
+      towerLimit: 1, manaMax: 85, autoDragonOrbs: 1, orbLimit: 1, orbMax: 330, autoCasting: 0 });
+    const o = Game.Objects;
+    o.Mine.amount = 497; o.Factory.amount = 500; o.You.amount = 320;
+    const towers = o["Wizard tower"], M = towers.minigame;
+    // FC's autoCookie purchase with the store on x1 (count 1), as FC+ sees it.
+    FCP.inAutoCookie = true;
+    try { safeBuy(o.Mine, 1); safeBuy(o.You, 1); safeBuy(towers, 1); } finally { FCP.inAutoCookie = false; }
+    M.computeMagicM();
+    return { mines: o.Mine.amount, factories: FCP.fcLimit(o.Factory), you: o.You.amount,
+      magicM: M.magicM, towerLeft: FCP.fcLimit(towers), farms: FCP.fcLimit(o.Farm) };
+  });
+  expect(r.mines).toBe(500);
+  expect(r.factories).toBe(0);
+  expect(r.you).toBe(330);
+  expect(r.magicM).toBeGreaterThanOrEqual(85);  // towers stopped where max magic reaches the setting...
+  expect(r.towerLeft).toBe(0);                  // ...and no more are allowed
+  expect(r.farms).toBe(Infinity);
+  noErrors(errors);
+});

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.14.0 · 2026-11-28
+### Added
+- Burst buying: anything costing under 1% of the spare cookies is bought straight away, without comparing its value with other purchases. Early in a run that means 100 of each building at once, instead of one or two per round
+### Changed
+- Smart bulk buy decides how many of a building FC buys (up to 100) whatever the store's x1/x10/x100 button shows, and keeps to FC's building limits itself (Mines and Factories, Wizard towers by max magic, "You" and dragon orbs). Before, it only acted with the store on x10/x100, and with x1 FC bought one at a time
+- Recommended options turn FC's Auto Bulkbuy off: it only clicked the store's x100 button after each ascension, which now just changes the prices the store shows. The store stays where you put it
+
 ## 1.13.5 · 2026-11-28
 ### Fixed
 - While the game window can't be seen (minimised, or covered by other windows), the browser slows FC's timers and the autoclicker nearly stops, and FC+ measured that as your click speed. Golden cookies (through Click frenzy) then looked far worse, so Smart season switched to Christmas, and switched back once you returned. The measured click speed now keeps its last value from while the game was in view, and Smart season decides nothing while it is hidden
