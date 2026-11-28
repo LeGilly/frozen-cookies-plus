@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.13.5 · 2026-11-28
+### Fixed
+- While the game window can't be seen (minimised, or covered by other windows), the browser slows FC's timers and the autoclicker nearly stops, and FC+ measured that as your click speed. Golden cookies (through Click frenzy) then looked far worse, so Smart season switched to Christmas, and switched back once you returned. The measured click speed now keeps its last value from while the game was in view, and Smart season decides nothing while it is hidden
+
+## 1.13.4 · 2026-11-28
+### Fixed
+- Smart season switched back and forth between Business Day and Christmas, and each switch costs 1.5 times the last one in a run. It judged the moment: while the elders are angry (waiting for the wrinkler pops, the pledge cycle), reindeer during an Elder frenzy count 666 times and looked about 11 times better, and right after a big purchase the golden cookies looked about 4 times worse. It now judges the state the run settles into: elders calmed when the Elder Pledge option puts the Covenant on, and the cookies held for golden cookies averaged over 30 minutes. It also changes on income at most once an hour, and the infobox says when a switch is waiting ("Christmas pays more: switching in 40m"). Christmas goals still switch at once
+
 ## 1.13.3 · 2026-11-27
 ### Changed
 - Apply recommended options now turns FC's keyboard shortcuts off. They react to a single key anywhere on the game screen, and R resets the run at once without asking, so one stray key could cost a whole run. They can still be turned back on in the FC menu (Shortcuts)

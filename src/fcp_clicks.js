@@ -24,6 +24,14 @@ FCP.realClickRate = function () {
 };
 
 FCP.clickTick = function () {
+    // While the game window can't be seen (minimised, or covered by other windows), the browser
+    // slows FC's timers and the autoclicker nearly stops. That rate says nothing about normal
+    // play, and everything scored on it (click upgrades, golden cookies through Click frenzy,
+    // Smart season) would swing until you come back: keep the last rate measured in view.
+    if (document.hidden) {
+        FCP.clicks.samples = [];
+        return;
+    }
     var now = Date.now();
     var s = FCP.clicks.samples;
     s.push({ t: now, clicks: Game.cookieClicks, frenzy: clickBuffBonus() > 1 });

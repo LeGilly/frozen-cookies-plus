@@ -30,3 +30,20 @@ test("the real click rate is measured and used instead of the configured 250/s",
   await expect(page.locator("#fcpInfoPanel")).toContainText("25/s (set 250/s, game max 50/s)", { timeout: 15_000 });
   noErrors(errors);
 });
+
+test("while the game window can't be seen, the measured click rate keeps its last value", async ({ page }) => {
+  const errors = await loadGame(page);
+  const r = await page.evaluate(() => {
+    FrozenCookies.autoClick = 1; FrozenCookies.cookieClickSpeed = 50; FrozenCookies.measuredClicks = 1;
+    FCP.clicks.measured = 42;
+    FCP.clicks.samples = [{ t: Date.now() - 20000, clicks: Game.cookieClicks, frenzy: false }];
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    FCP.clickTick(); // no clicks in 20 s, but hidden: not measured as 0
+    const hidden = FCP.clicks.measured;
+    delete document.hidden;
+    return { hidden, samples: FCP.clicks.samples.length };
+  });
+  expect(r.hidden).toBe(42);
+  expect(r.samples).toBe(0);
+  noErrors(errors);
+});

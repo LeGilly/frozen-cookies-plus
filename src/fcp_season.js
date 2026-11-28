@@ -57,9 +57,20 @@ FCP.christmasGoals = function () {
     return goals;
 };
 
+// Both incomes are judged in the state the run settles into, not the moment's: the choice used
+// to flip with passing states (and each switch costs 1.5x the last one in a run).
+// - The elders' wrath: while they are angry (the wrinkler pops, the pledge cycle), reindeer during
+//   an Elder frenzy count 666x and looked 11x better. With the Elder Pledge option the Covenant
+//   calms them for the rest of the run, so judge at wrath 0; otherwise at the current wrath.
+// - The cookies held for golden cookies (what a Lucky! pays on): a 30-minute running average, not
+//   the moment after a big purchase drained them (FCP.seasonBank, updated by the season task).
+FCP.seasonWrath = function () {
+    return FrozenCookies.elderPledgeAchievs ? 0 : Game.elderWrath;
+};
+
 // Reindeer income per second if it were Christmas (FC's reindeerValue only counts during Christmas).
 FCP.reindeerIncome = function () {
-    var w = Game.elderWrath, frenzy = frenzyProbability(w), clot = clotProbability(w), blood = bloodProbability(w);
+    var w = FCP.seasonWrath(), frenzy = frenzyProbability(w), clot = clotProbability(w), blood = bloodProbability(w);
     var per = baseCps() * (Game.Has("Ho ho ho-flavored frosting") ? 2 : 1) * 60;
     var value = Math.max(25, per * 7) * frenzy + Math.max(25, per * 0.5) * clot + Math.max(25, per * 666) * blood +
         Math.max(25, per) * (1 - frenzy - clot - blood);
@@ -69,8 +80,21 @@ FCP.reindeerIncome = function () {
 
 // Golden cookie income per second without any season bonus (FC's spawn model leaves the Star
 // upgrades out, so this is the same in every season).
+FCP.SEASON_BANK_MINUTES = 30;
+FCP.seasonBank = { value: null, t: 0 };
+FCP.heldForGolden = function () {
+    return Math.min(Game.cookies, FCP.bankTarget() || Game.cookies);
+};
+FCP.updateSeasonBank = function () {
+    var now = Date.now(), x = FCP.heldForGolden(), s = FCP.seasonBank;
+    if (s.value === null) s.value = x;
+    else s.value += (x - s.value) * Math.min(1, (now - s.t) / (FCP.SEASON_BANK_MINUTES * 60e3));
+    s.t = now;
+    return s.value;
+};
 FCP.goldenIncomeBase = function () {
-    return gcPs(cookieValue(Math.min(Game.cookies, FCP.bankTarget())));
+    var bank = FCP.seasonBank.value !== null ? FCP.seasonBank.value : FCP.heldForGolden();
+    return gcPs(cookieValue(bank, FCP.seasonWrath()));
 };
 
 // Each season's extra income per second, best first: [{season, value, what}].
@@ -96,20 +120,38 @@ FCP.bestSeason = function () {
     return { season: best.season, why: why };
 };
 
+// Between two changes made on income alone, at least this long: a safety net against back and
+// forth. Christmas goals appearing switch at once, and don't start the clock.
+FCP.SEASON_MIN_HOURS = 1;
+
 FCP.seasonTick = function () {
     if (!FrozenCookies.defaultSeasonToggle || !Game.Has("Season switcher")) {
         FCP.status["Season"] = "";
         return;
     }
+    // Nothing is decided while the game window can't be seen: the slowed timers make every
+    // estimate look worse than normal play (see fcp_clicks.js).
+    if (document.hidden) return;
+    FCP.updateSeasonBank();
     var b = FCP.attempt("best season", FCP.bestSeason, null);
     if (!b) return;
-    var i = seasons.indexOf(b.season);
+    var i = seasons.indexOf(b.season), pending = "";
     if (i > 0 && FrozenCookies.defaultSeason !== i) {
-        FrozenCookies.defaultSeason = i;
-        FCP.log("Resting season: " + FCP.seasonName(b.season) + " (" + b.why + ").");
+        var goals = FCP.christmasGoals().length > 0;
+        var last = FCP.runStore("fcpSeasonChange"), now = Date.now();
+        var left = !goals && last.t ? last.t + FCP.SEASON_MIN_HOURS * 3600e3 - now : 0;
+        if (left <= 0) {
+            FrozenCookies.defaultSeason = i;
+            if (!goals) {
+                last.t = now;
+                FCP.store("fcpSeasonChange", last);
+            }
+            FCP.log("Resting season: " + FCP.seasonName(b.season) + " (" + b.why + ").");
+        } else pending = " · " + FCP.seasonName(b.season) + " pays more: switching in " + FCP.shortTime(left / 1000);
     }
-    FCP.status["Season"] = FCP.seasonName(b.season) + " · " + b.why +
-        (Game.season !== b.season ? " · now " + FCP.seasonName(Game.season) : "");
+    var resting = seasons[FrozenCookies.defaultSeason];
+    FCP.status["Season"] = FCP.seasonName(resting) + " · " + b.why + pending +
+        (Game.season !== resting ? " · now " + FCP.seasonName(Game.season) : "");
 };
 
 FCP.addTask("season", function () { return !!FrozenCookies.smartSeason; }, FCP.seasonTick, 10000);
